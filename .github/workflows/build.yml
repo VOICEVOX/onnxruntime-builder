@@ -136,10 +136,12 @@ jobs:
           path: artifact/*
           retention-days: 14
 
-      - name: Rearchive artifact
+      - name: Generate RELEASE_NAME
         run: |
           echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
 
+      - name: Rearchive artifact
+        run: |
           mv artifact/ "${{ env.RELEASE_NAME }}"
           tar cf "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
