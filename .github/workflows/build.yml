@@ -136,14 +136,18 @@ jobs:
           path: artifact/*
           retention-days: 14
 
+      - name: Generate RELEASE_NAME
+        run: |
+          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+
       - name: Rearchive artifact
         run: |
-          cd artifact/
-          zip -r ../${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}.zip *
+          mv artifact/ "${{ env.RELEASE_NAME }}"
+          tar cf "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref }} # ==> github.event.release.tag_name
-          file: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}.zip
+          file: ${{ env.RELEASE_NAME }}.tgz
