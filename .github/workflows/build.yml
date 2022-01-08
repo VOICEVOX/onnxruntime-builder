@@ -143,7 +143,7 @@ jobs:
       - name: Rearchive artifact
         run: |
           mv artifact/ "${{ env.RELEASE_NAME }}"
-          tar cf "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
+          tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
         uses: svenstaro/upload-release-action@v2
