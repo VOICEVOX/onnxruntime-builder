@@ -74,6 +74,7 @@ jobs:
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
+
       - name: Configure build environment
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
@@ -81,6 +82,7 @@ jobs:
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
           echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+
           # Prevent Exec Format Error during cross-compiling
           if [ -n "${{ matrix.ld_symlink_name }}" ]; then
             sudo ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
@@ -102,13 +104,17 @@ jobs:
       - name: Organize artifact
         run: |
           mkdir artifact
+
           # copy shared lib
           mkdir artifact/lib
+
           NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
           cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
           ln -s "${NAME}" artifact/lib/libonnxruntime.so
+
           # copy header files
           mkdir artifact/include
+
           readarray -t HEADERS <<EOF
           onnxruntime/core/session/onnxruntime_c_api.h
           onnxruntime/core/session/onnxruntime_cxx_api.h
@@ -118,17 +124,20 @@ jobs:
           onnxruntime/core/session/onnxruntime_run_options_config_keys.h
           onnxruntime/core/framework/provider_options.h
           EOF
+
           for path in "${HEADERS[@]}"; do
             cp "include/${path}" ./artifact/include/
           done
+
           # copy docs & license
           cp VERSION_NUMBER ./artifact/
           cp LICENSE ./artifact/
           cp ThirdPartyNotices.txt ./artifact/
           cp docs/Privacy.md ./artifact/
           cp README.md ./artifact/
+
           echo "$(git rev-parse HEAD)" >> ./artifact/GIT_COMMIT_ID
-      
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
@@ -137,15 +146,18 @@ jobs:
           retention-days: 14
 
       - name: Generate RELEASE_NAME
+        if: github.event.release.tag_name != '' # If release
         run: |
           echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
 
       - name: Rearchive artifact
+        if: github.event.release.tag_name != '' # If release
         run: |
           mv artifact/ "${{ env.RELEASE_NAME }}"
           tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
+        if: github.event.release.tag_name != '' # If release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
