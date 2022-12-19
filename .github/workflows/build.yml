@@ -33,7 +33,7 @@ jobs:
             result_dir: build/Linux/Release
 
     env:
-      ONNXRUNTIME_VERSION: v1.10.0
+      ONNXRUNTIME_VERSION: v1.13.1
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
       # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
