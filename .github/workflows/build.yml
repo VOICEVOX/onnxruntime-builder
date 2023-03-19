@@ -16,7 +16,7 @@ jobs:
       matrix:
         include:
           - artifact_name: onnxruntime-linux-armhf-cpu
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             cc_version: '8'
             cxx_version: '8'
             arch: arm-linux-gnueabihf
@@ -24,7 +24,7 @@ jobs:
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
           - artifact_name: onnxruntime-linux-arm64-cpu
-            os: ubuntu-18.04
+            os: ubuntu-20.04
             cc_version: '8'
             cxx_version: '8'
             arch: aarch64-linux-gnu
