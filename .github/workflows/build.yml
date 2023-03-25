@@ -20,7 +20,7 @@ jobs:
             cc_version: '8'
             cxx_version: '8'
             arch: arm-linux-gnueabihf
-            ld_symlink_name: ld-linux-armhf.so.3
+            symlink_workaround: true
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
           - artifact_name: onnxruntime-linux-arm64-cpu
@@ -28,7 +28,7 @@ jobs:
             cc_version: '8'
             cxx_version: '8'
             arch: aarch64-linux-gnu
-            ld_symlink_name: ld-linux-aarch64.so.1
+            symlink_workaround: true
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
 
@@ -92,9 +92,9 @@ jobs:
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
 
           # Prevent Exec Format Error during cross-compiling
-          if [ -n "${{ matrix.ld_symlink_name }}" ]; then
-            sudo ln -s /usr/${{ matrix.arch }}/lib /lib/${{ matrix.arch }}
-            sudo ln -s /lib/${{ matrix.arch }}/ld-*.so /lib/${{ matrix.ld_symlink_name }}
+          if ${{ matrix.symlink_workaround }}; then
+            find /usr/${{ matrix.arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.arch }}/ ';'
+            sudo ln -s /usr/${{ matrix.arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
       
       - name: Build ONNX Runtime
