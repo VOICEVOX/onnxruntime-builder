@@ -33,7 +33,7 @@ jobs:
             result_dir: build/Linux/Release
 
     env:
-      ONNXRUNTIME_VERSION: v1.13.1
+      ONNXRUNTIME_VERSION: v1.14.1
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
       # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
@@ -74,11 +74,11 @@ jobs:
               g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
       
-      # ONNX Runtime v1.9.0 requires CMake 3.18 or higher.
+      # ONNX Runtime v1.14.1 requires CMake 3.24 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         env:
-          CMAKE_VERSION: 3.22.0-rc2
+          CMAKE_VERSION: 3.24.4
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
