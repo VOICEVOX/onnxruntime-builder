@@ -31,6 +31,18 @@ jobs:
             symlink_workaround: true
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux/Release
+          - artifact_name: onnxruntime-ios-arm64-cpu
+            os: macos-12
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
+            result_dir: build/iOS/Release
+          - artifact_name: onnxruntime-ios-sim-arm64-cpu
+            os: macos-12
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
+            result_dir: build/iOS/Release
+          - artifact_name: onnxruntime-ios-sim-x86_64-cpu
+            os: macos-12
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
+            result_dir: build/iOS/Release
 
     env:
       ONNXRUNTIME_VERSION: v1.14.1
@@ -62,7 +74,7 @@ jobs:
           key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
       - name: Install build dependencies
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -76,7 +88,7 @@ jobs:
       
       # ONNX Runtime v1.14.1 requires CMake 3.24 or higher.
       - name: Install CMake
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
           CMAKE_VERSION: 3.24.4
         run: |
@@ -84,7 +96,7 @@ jobs:
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Configure build environment
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |
           # Required for arm build
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
@@ -116,9 +128,9 @@ jobs:
           # copy shared lib
           mkdir artifact/lib
 
-          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.so.*)
+          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.{so.*,dylib})
           cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
-          ln -s "${NAME}" artifact/lib/libonnxruntime.so
+          ln -s "${NAME}" artifact/lib/libonnxruntime.{so,dylib}
 
           # copy header files
           mkdir artifact/include
