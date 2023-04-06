@@ -109,10 +109,6 @@ jobs:
             sudo ln -s /usr/${{ matrix.arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
       
-      - name: Prepare Xcode for build iOS target
-        if: startsWith(matrix.os, 'macos')
-        run: sudo xcode-select --reset
-
       - name: Build ONNX Runtime
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         env:
