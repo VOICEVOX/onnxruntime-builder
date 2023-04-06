@@ -130,8 +130,8 @@ jobs:
           mkdir artifact/lib
 
           NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.{so.*,dylib})
-          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/
-          ln -s "${NAME}" artifact/lib/libonnxruntime.{so,dylib}
+          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/ || true
+          ln -s "${NAME}" artifact/lib/libonnxruntime.{so,dylib} || true
 
           # copy header files
           mkdir artifact/include
