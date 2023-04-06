@@ -33,15 +33,15 @@ jobs:
             result_dir: build/Linux/Release
           - artifact_name: onnxruntime-ios-arm64-cpu
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
           - artifact_name: onnxruntime-ios-sim-arm64-cpu
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
           - artifact_name: onnxruntime-ios-sim-x86_64-cpu
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip-tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
 
     env:
