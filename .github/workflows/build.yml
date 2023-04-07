@@ -138,7 +138,7 @@ jobs:
           ./tools/ci_build/github/linux/copy_strip_binary.sh \
             -r ${{ matrix.result_dir }} \
             -a ${{ matrix.artifact_name }} \
-            -l libonnxruntime.${{ env.ONNXRUNTIME_VERSION:1 }}.${{ matrix.library_extension }} \
+            -l libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.${{ matrix.library_extension }} \
             -c ${{ matrix.release_config }} \
             -s "$(pwd)" \
             -t "$(git rev-parse HEAD)"
