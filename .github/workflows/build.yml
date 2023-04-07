@@ -22,7 +22,9 @@ jobs:
             arch: arm-linux-gnueabihf
             symlink_workaround: true
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
-            result_dir: build/Linux/Release
+            result_dir: build/Linux
+            release_config: Release
+            library_name: libonnxruntime.so
           - artifact_name: onnxruntime-linux-arm64-cpu
             os: ubuntu-20.04
             cc_version: '8'
@@ -30,19 +32,27 @@ jobs:
             arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
-            result_dir: build/Linux/Release
+            result_dir: build/Linux
+            release_config: Release
+            library_name: libonnxruntime.so
           - artifact_name: onnxruntime-ios-arm64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
+            release_config: Release-iphoneos
+            library_name: libonnxruntime.dylib
           - artifact_name: onnxruntime-ios-sim-arm64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
+            release_config: Release-iphonesimulator
+            library_name: libonnxruntime.dylib
           - artifact_name: onnxruntime-ios-sim-x86_64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
+            release_config: Release-iphonesimulator
+            library_name: libonnxruntime.dylib
 
     env:
       ONNXRUNTIME_VERSION: v1.14.1
@@ -123,41 +133,15 @@ jobs:
           bash ./build.sh ${{ matrix.build_opts }}
       
       - name: Organize artifact
+        shell: bash
         run: |
-          mkdir artifact
-
-          # copy shared lib
-          mkdir artifact/lib
-
-          NAME=$(basename ${{ matrix.result_dir }}/libonnxruntime.{so.*,dylib})
-          cp "${{ matrix.result_dir }}/${NAME}" artifact/lib/ || true
-          ln -s "${NAME}" artifact/lib/libonnxruntime.{so,dylib} || true
-
-          # copy header files
-          mkdir artifact/include
-
-          readarray -t HEADERS <<EOF
-          onnxruntime/core/session/onnxruntime_c_api.h
-          onnxruntime/core/session/onnxruntime_cxx_api.h
-          onnxruntime/core/session/onnxruntime_cxx_inline.h
-          onnxruntime/core/providers/cpu/cpu_provider_factory.h
-          onnxruntime/core/session/onnxruntime_session_options_config_keys.h
-          onnxruntime/core/session/onnxruntime_run_options_config_keys.h
-          onnxruntime/core/framework/provider_options.h
-          EOF
-
-          for path in "${HEADERS[@]}"; do
-            cp "include/${path}" ./artifact/include/
-          done
-
-          # copy docs & license
-          cp VERSION_NUMBER ./artifact/
-          cp LICENSE ./artifact/
-          cp ThirdPartyNotices.txt ./artifact/
-          cp docs/Privacy.md ./artifact/
-          cp README.md ./artifact/
-
-          echo "$(git rev-parse HEAD)" >> ./artifact/GIT_COMMIT_ID
+          ./tools/ci_build/github/linux/copy_strip_binary.sh \
+            -r ${{ matrix.result_dir }} \
+            -a ${{ matrix.artifact_name }} \
+            -l ${{ matrix.library_name }} \
+            -c ${{ matrix.release_config }} \
+            -s "$(pwd)" \
+            -t "$(git rev-parse HEAD)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
