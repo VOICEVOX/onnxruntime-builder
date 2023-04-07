@@ -135,10 +135,13 @@ jobs:
       - name: Organize artifact
         shell: bash
         run: |
+          # バージョンにはvが必要ないので取り除く
+          ONNXRUNTIME_VERSION=${{ env.ONNXRUNTIME_VERSION }}
+          ONNXRUNTIME_VERSION=${ONNXRUNTIME_VERSION:1}
           ./tools/ci_build/github/linux/copy_strip_binary.sh \
             -r ${{ matrix.result_dir }} \
             -a ${{ matrix.artifact_name }} \
-            -l libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.${{ matrix.library_extension }} \
+            -l "libonnxruntime.$ONNXRUNTIME_VERSION.${{ matrix.library_extension }}" \
             -c ${{ matrix.release_config }} \
             -s "$(pwd)" \
             -t "$(git rev-parse HEAD)"
