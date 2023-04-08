@@ -149,6 +149,7 @@ jobs:
             -c ${{ matrix.release_config }} \
             -s "$(pwd)" \
             -t "$(git rev-parse HEAD)"
+          mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v2
