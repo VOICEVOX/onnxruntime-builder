@@ -130,6 +130,9 @@ jobs:
       - name: Organize artifact
         shell: bash
         run: |
+          # コピー先artifactを予め削除しておく
+          rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }} || true
+          rm -r ./artifact || true
           # バージョンにはvが必要ないので取り除く
           ONNXRUNTIME_VERSION=${{ env.ONNXRUNTIME_VERSION }}
           ONNXRUNTIME_VERSION=${ONNXRUNTIME_VERSION:1}
