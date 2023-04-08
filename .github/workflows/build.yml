@@ -24,7 +24,6 @@ jobs:
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux
             release_config: Release
-            library_extension: so
           - artifact_name: onnxruntime-linux-arm64-cpu
             os: ubuntu-20.04
             cc_version: '8'
@@ -34,25 +33,21 @@ jobs:
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux
             release_config: Release
-            library_extension: so
           - artifact_name: onnxruntime-ios-arm64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphoneos
-            library_extension: dylib
           - artifact_name: onnxruntime-ios-sim-arm64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
-            library_extension: dylib
           - artifact_name: onnxruntime-ios-sim-x86_64-cpu
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
-            library_extension: dylib
 
     env:
       ONNXRUNTIME_VERSION: v1.14.1
@@ -131,17 +126,26 @@ jobs:
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
           bash ./build.sh ${{ matrix.build_opts }}
-      
+
       - name: Organize artifact
         shell: bash
         run: |
           # バージョンにはvが必要ないので取り除く
           ONNXRUNTIME_VERSION=${{ env.ONNXRUNTIME_VERSION }}
           ONNXRUNTIME_VERSION=${ONNXRUNTIME_VERSION:1}
+          # Set library name
+          if [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
+            ONNXRUNTIME_NAME=libonnxruntime.so.$ONNXRUNTIME_VERSION
+          elif [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
+            ONNXRUNTIME_NAME=libonnxruntime.$ONNXRUNTIME_VERSION.dylib
+          else
+            echo "Unknown target found : ${{ matrix.artifact_name }}"
+            return 1
+          fi
           ./tools/ci_build/github/linux/copy_strip_binary.sh \
             -r ${{ matrix.result_dir }} \
             -a ${{ matrix.artifact_name }} \
-            -l "libonnxruntime.$ONNXRUNTIME_VERSION.${{ matrix.library_extension }}" \
+            -l $ONNXRUNTIME_NAME \
             -c ${{ matrix.release_config }} \
             -s "$(pwd)" \
             -t "$(git rev-parse HEAD)"
