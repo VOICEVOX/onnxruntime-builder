@@ -184,18 +184,18 @@ jobs:
           retention-days: 14
 
       - name: Generate RELEASE_NAME
-        if: env.RELEASE
+        if: env.RELEASE != 'true'
         run: |
           echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
 
       - name: Rearchive artifact
-        if: env.RELEASE
+        if: env.RELEASE != 'true'
         run: |
           mv artifact/ "${{ env.RELEASE_NAME }}"
           tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
-        if: env.RELEASE
+        if: env.RELEASE != 'true'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
