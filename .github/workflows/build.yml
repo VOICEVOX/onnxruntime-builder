@@ -14,8 +14,7 @@ on:
         required: true
       release:
         description: "リリースするかどうか"
-        required: true
-        default: "false"
+        type: boolean
 
 env:
   ONNXRUNTIME_VERSION:
