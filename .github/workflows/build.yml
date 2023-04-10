@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - artifact_name: onnxruntime-linux-armhf-cpu
+          - artifact_name: onnxruntime-linux-armhf
             os: ubuntu-20.04
             cc_version: '8'
             cxx_version: '8'
@@ -24,7 +24,7 @@ jobs:
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux
             release_config: Release
-          - artifact_name: onnxruntime-linux-arm64-cpu
+          - artifact_name: onnxruntime-linux-arm64
             os: ubuntu-20.04
             cc_version: '8'
             cxx_version: '8'
@@ -33,24 +33,24 @@ jobs:
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
             result_dir: build/Linux
             release_config: Release
-          - artifact_name: onnxruntime-ios-arm64-cpu
+          - artifact_name: onnxruntime-ios-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphoneos
-          - artifact_name: onnxruntime-ios-sim-arm64-cpu
+          - artifact_name: onnxruntime-ios-sim-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
-          - artifact_name: onnxruntime-ios-sim-x86_64-cpu
+          - artifact_name: onnxruntime-ios-sim-x86_64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
 
     env:
-      ONNXRUNTIME_VERSION: v1.14.1
+      ONNXRUNTIME_VERSION: 1.14.1
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
       # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
       ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
@@ -64,7 +64,7 @@ jobs:
         with:
           repository: microsoft/onnxruntime
           submodules: true
-          ref: ${{ env.ONNXRUNTIME_VERSION }}
+          ref: v${{ env.ONNXRUNTIME_VERSION }}
 
       - name: Dump matrix context
         env:
@@ -76,7 +76,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
       - name: Install build dependencies
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
@@ -133,14 +133,11 @@ jobs:
           # コピー先artifactを予め削除しておく
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
-          # バージョンにはvが必要ないので取り除く
-          ONNXRUNTIME_VERSION=${{ env.ONNXRUNTIME_VERSION }}
-          ONNXRUNTIME_VERSION=${ONNXRUNTIME_VERSION:1}
           # Set library name
           if [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
-            ONNXRUNTIME_NAME=libonnxruntime.so.$ONNXRUNTIME_VERSION
+            ONNXRUNTIME_NAME=libonnxruntime.so.${{ env.ONNXRUNTIME_VERSION }}
           elif [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
-            ONNXRUNTIME_NAME=libonnxruntime.$ONNXRUNTIME_VERSION.dylib
+            ONNXRUNTIME_NAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
             return 1
