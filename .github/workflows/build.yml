@@ -145,7 +145,7 @@ jobs:
           ./tools/ci_build/github/linux/copy_strip_binary.sh \
             -r ${{ matrix.result_dir }} \
             -a ${{ matrix.artifact_name }} \
-            -l ${{ env.ONNXRUNTIME_VERSION }} \
+            -l $ONNXRUNTIME_NAME \
             -c ${{ matrix.release_config }} \
             -s "$(pwd)" \
             -t "$(git rev-parse HEAD)"
