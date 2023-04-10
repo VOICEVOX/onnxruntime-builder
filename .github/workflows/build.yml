@@ -12,11 +12,18 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
+      release:
+        description: "リリースするかどうか"
+        required: true
+        default: "false"
 
 env:
   ONNXRUNTIME_VERSION:
-    |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら空欄
-    ${{ github.event.release.tag_name || github.event.inputs.version || '' }}
+    |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.14.0' }}
+  RELEASE:
+    |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
+    ${{ !github.event.release.tag_name || github.event.inputs.release == 'true' && 'true' || 'false' }}
 
 jobs:
   build-onnxruntime:
@@ -67,11 +74,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Version check
+      - name: Version check (semver)
         run: |
-          if [ -z "${{ env.ONNXRUNTIME_VERSION }}" ]; then
-            echo "ONNXRUNTIME_VERSION is empty."
-            exit 1
+          VERSION="${{ env.ONNXRUNTIME_VERSION }}"
+          if [[ $VERSION !~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
+            echo "$VERSION is not a valid semver."
           fi
 
       - name: Checkout
@@ -174,20 +181,20 @@ jobs:
           retention-days: 14
 
       - name: Generate RELEASE_NAME
-        if: github.event.release.tag_name != '' # If release
+        if: env.RELEASE
         run: |
           echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
 
       - name: Rearchive artifact
-        if: github.event.release.tag_name != '' # If release
+        if: env.RELEASE
         run: |
           mv artifact/ "${{ env.RELEASE_NAME }}"
           tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
-        if: github.event.release.tag_name != '' # If release
+        if: env.RELEASE
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref }} # ==> github.event.release.tag_name
+          tag: ${{ env.ONNXRUNTIME_VERSION }} # ==> github.event.release.tag_name
           file: ${{ env.RELEASE_NAME }}.tgz
