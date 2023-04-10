@@ -81,6 +81,7 @@ jobs:
             echo "Version: $VERSION"
           else
             echo "$VERSION is not a valid semver."
+            exit 1
           fi
 
       - name: Checkout
