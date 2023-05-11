@@ -201,3 +201,70 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.ONNXRUNTIME_VERSION }} # ==> github.event.release.tag_name
           file: ${{ env.RELEASE_NAME }}.tgz
+  
+  build-xcframework:
+    needs: build-onnxruntime
+    runs-on: macos-12
+    steps:
+      - name: Generate RELEASE_NAME
+        if: env.RELEASE == 'true'
+        run: |
+          echo "RELEASE_NAME=onnxruntime-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: onnxruntime-ios-arm64
+          path: artifact/onnxruntime-x86_64-apple-ios
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: onnxruntime-ios-sim-arm64
+          path: artifact/onnxruntime-aarch64-apple-ios-sim
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: onnxruntime-ios-sim-x86_64
+          path: artifact/onnxruntime-aarch64-apple-ios
+
+      - name: Remove no version notation dylib
+        shell: bash
+        run: |
+          rm -f artifact/onnxruntime-x86_64-apple-ios/lib/*onnxruntime.dylib
+          rm -f artifact/onnxruntime-aarch64-apple-ios-sim/lib/*onnxruntime.dylib
+          rm -f artifact/onnxruntime-aarch64-apple-ios/lib/*onnxruntime.dylib
+
+      - name: Set basename env var
+        shell: bash
+        run: |
+          echo "ONNXRUNTIME_BASENAME=$(find artifact/onnxruntime-x86_64-apple-ios/lib -type f -name '*onnxruntime*.dylib' -exec basename {} \;)" >> "$GITHUB_ENV"
+
+      - name: Create fat binary
+        shell: bash
+        run: |
+          mkdir -p "artifact/onnxruntime-sim"
+          lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" "artifact/onnxruntime-aarch64-apple-ios-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}"
+
+      - name: Create XCFramework
+        shell: bash
+        run: |
+          mkdir -p "artifact/${{ env.ONNXRUNTIME_BASENAME }}"
+          xcodebuild -create-xcframework \
+            -library "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}" \
+            -library "artifact/onnxruntime-aarch64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
+            -output "artifact/${{ env.ONNXRUNTIME_BASENAME }}/onnxruntime.xcframework"
+
+      - name: Archive artifact
+        shell: bash
+        run: |
+          cd artifact
+          7z a "../${{ env.RELEASE_NAME }}.zip" "${{ env.ONNXRUNTIME_BASENAME }}"
+
+      - name: Upload to Release
+        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        uses: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          tag_name: ${{ env.VERSION }}
+          files: |-
+            ${{ env.RELEASE_NAME }}.zip
+          target_commitish: ${{ github.sha }}
