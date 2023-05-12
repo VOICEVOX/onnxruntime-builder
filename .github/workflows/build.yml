@@ -207,7 +207,6 @@ jobs:
     runs-on: macos-12
     steps:
       - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
-        if: env.RELEASE == 'true'
         run: |
           echo "RELEASE_NAME=onnxruntime-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
           echo "ONNXRUNTIME_BASENAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib" >> "$GITHUB_ENV"
