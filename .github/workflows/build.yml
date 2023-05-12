@@ -206,10 +206,11 @@ jobs:
     needs: build-onnxruntime
     runs-on: macos-12
     steps:
-      - name: Generate RELEASE_NAME
+      - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
         if: env.RELEASE == 'true'
         run: |
           echo "RELEASE_NAME=onnxruntime-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+          echo "ONNXRUNTIME_BASENAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib" >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v2
         with:
@@ -232,11 +233,6 @@ jobs:
           rm -f artifact/onnxruntime-x86_64-apple-ios/lib/*onnxruntime.dylib
           rm -f artifact/onnxruntime-aarch64-apple-ios-sim/lib/*onnxruntime.dylib
           rm -f artifact/onnxruntime-aarch64-apple-ios/lib/*onnxruntime.dylib
-
-      - name: Set basename env var
-        shell: bash
-        run: |
-          echo "ONNXRUNTIME_BASENAME=$(find artifact/onnxruntime-x86_64-apple-ios/lib -type f -name '*onnxruntime*.dylib' -exec basename {} \;)" >> "$GITHUB_ENV"
 
       - name: Create fat binary
         shell: bash
