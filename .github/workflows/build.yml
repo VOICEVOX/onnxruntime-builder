@@ -255,7 +255,7 @@ jobs:
           7z a "../${{ env.RELEASE_NAME }}.zip" "${{ env.ONNXRUNTIME_BASENAME }}"
 
       - name: Upload to Release
-        if: env.VERSION != '0.0.0' && env.SKIP_UPLOADING_RELEASE_ASSET == '0'
+        if: env.RELEASE == 'true'
         uses: softprops/action-gh-release@v1
         with:
           prerelease: true
