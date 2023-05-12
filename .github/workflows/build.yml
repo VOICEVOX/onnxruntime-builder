@@ -214,7 +214,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: onnxruntime-ios-arm64
-          path: artifact/onnxruntime-x86_64-apple-ios
+          path: artifact/onnxruntime-aarch64-apple-ios
 
       - uses: actions/download-artifact@v2
         with:
@@ -224,7 +224,7 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: onnxruntime-ios-sim-x86_64
-          path: artifact/onnxruntime-aarch64-apple-ios
+          path: artifact/onnxruntime-x86_64-apple-ios
 
       - name: Remove no version notation dylib
         shell: bash
