@@ -237,7 +237,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p "artifact/onnxruntime-sim"
-          lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" "artifact/onnxruntime-aarch64-apple-ios-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}"
+          lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" "artifact/onnxruntime-aarch64-apple-ios-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}" -output "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}"
 
       - name: Create XCFramework
         shell: bash
