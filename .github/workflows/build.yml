@@ -251,8 +251,8 @@ jobs:
       - name: Archive artifact
         shell: bash
         run: |
-          cd artifact
-          7z a "../${{ env.RELEASE_NAME }}.zip" "${{ env.ONNXRUNTIME_BASENAME }}"
+          cd artifact/${{ env.ONNXRUNTIME_BASENAME }}
+          7z a "../../${{ env.RELEASE_NAME }}.zip" "onnxruntime.xcframework"
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
