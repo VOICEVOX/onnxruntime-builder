@@ -195,7 +195,7 @@ jobs:
           tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
 
       - name: Upload to Release
-        if: env.RELEASE == 'true'
+        if: env.RELEASE == 'true' && !contains(matrix.artifact_name, 'ios')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
