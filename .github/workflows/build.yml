@@ -256,10 +256,9 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: svenstaro/upload-release-action@v2
         with:
-          prerelease: true
-          tag_name: ${{ env.VERSION }}
-          files: |-
-            ${{ env.RELEASE_NAME }}.zip
-          target_commitish: ${{ github.sha }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.ONNXRUNTIME_VERSION }} # ==> github.event.release.tag_name
+          file: ${{ env.RELEASE_NAME }}.zip
+  
