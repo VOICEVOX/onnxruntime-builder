@@ -55,16 +55,19 @@ jobs:
           - artifact_name: onnxruntime-ios-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphoneos
           - artifact_name: onnxruntime-ios-sim-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
           - artifact_name: onnxruntime-ios-sim-x86_64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
 
@@ -106,7 +109,7 @@ jobs:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
-      - name: Install build dependencies
+      - name: Install build dependencies on ubuntu
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
@@ -118,6 +121,12 @@ jobs:
               gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
               g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
+
+      - name: Install build dependencies on macos
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
+        run: |
+          # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
+          brew install protobuf@21
 
       # ONNX Runtime v1.15.1 requires CMake 3.26 or higher.
       - name: Install CMake
@@ -153,7 +162,7 @@ jobs:
           # skip test: https://github.com/microsoft/onnxruntime/issues/2436
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
-          bash ./build.sh ${{ matrix.build_opts }}
+          bash ./build.sh ${{ matrix.build_opts }} ${{ matrix.build_opts_workaround_protoc }}
 
       - name: Organize artifact
         run: |
