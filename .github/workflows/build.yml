@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.14.0' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.15.1' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
@@ -119,11 +119,11 @@ jobs:
               g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
 
-      # ONNX Runtime v1.14.1 requires CMake 3.24 or higher.
+      # ONNX Runtime v1.15.1 requires CMake 3.26 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
-          CMAKE_VERSION: 3.24.4
+          CMAKE_VERSION: 3.26.4
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
