@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.14.0' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.15.1' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
@@ -55,16 +55,19 @@ jobs:
           - artifact_name: onnxruntime-ios-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphoneos
           - artifact_name: onnxruntime-ios-sim-arm64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
           - artifact_name: onnxruntime-ios-sim-x86_64
             os: macos-12
             build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
+            build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
 
@@ -106,7 +109,7 @@ jobs:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
-      - name: Install build dependencies
+      - name: Install build dependencies on ubuntu
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
@@ -119,11 +122,17 @@ jobs:
               g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
               python3
 
-      # ONNX Runtime v1.14.1 requires CMake 3.24 or higher.
+      - name: Install build dependencies on macos
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
+        run: |
+          # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
+          brew install protobuf@21
+
+      # ONNX Runtime v1.15.1 requires CMake 3.26 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
-          CMAKE_VERSION: 3.24.4
+          CMAKE_VERSION: 3.26.4
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
@@ -153,7 +162,7 @@ jobs:
           # skip test: https://github.com/microsoft/onnxruntime/issues/2436
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
-          bash ./build.sh ${{ matrix.build_opts }}
+          bash ./build.sh ${{ matrix.build_opts }} ${{ matrix.build_opts_workaround_protoc }}
 
       - name: Organize artifact
         run: |
