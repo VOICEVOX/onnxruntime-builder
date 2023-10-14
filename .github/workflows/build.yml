@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.15.1' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.16.2' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
@@ -34,39 +34,95 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - artifact_name: onnxruntime-win-x64
+            os: windows-2022
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
+            result_dir: build/Windows/Release
+            release_config: Release
+          - artifact_name: onnxruntime-win-x64-gpu-dml
+            os: windows-2022
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_dml
+            result_dir: build/Windows/Release
+            release_config: Release
+          - artifact_name: onnxruntime-win-x64-gpu-cuda
+            os: windows-2022
+            cuda_version: 11.8.0
+            cuda_sub_packages: '["cudart", "cublas", "cufft", "curand", "cusolver", "cusparse", "nvcc", "visual_studio_integration"]'
+            cudnn_url: https://developer.download.nvidia.com/compute/redist/cudnn/v8.5.0/local_installers/11.7/cudnn-windows-x86_64-8.5.0.96_cuda11-archive.zip
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_cuda --cuda_version 11.8
+            result_dir: build/Windows/Release
+            release_config: Release
+          - artifact_name: onnxruntime-win-x86
+            os: windows-2022
+            build_opts: --x86 --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
+            result_dir: build/Windows/Release
+            release_config: Release
+          - artifact_name: onnxruntime-linux-x64
+            os: ubuntu-20.04
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
+            result_dir: build/Linux
+            release_config: Release
+          - artifact_name: onnxruntime-linux-x64-gpu
+            os: ubuntu-20.04
+            cuda_version: 11.8.0
+            cuda_sub_packages: "[]"
+            cudnn_url: https://developer.download.nvidia.com/compute/redist/cudnn/v8.2.4/cudnn-11.4-linux-x64-v8.2.4.15.tgz
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_cuda
+            result_dir: build/Linux
+            release_config: Release
           - artifact_name: onnxruntime-linux-armhf
             os: ubuntu-20.04
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: "9"
+            cxx_version: "9"
             arch: arm-linux-gnueabihf
             symlink_workaround: true
-            build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --update --build --build_shared_lib
+            build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build/Linux
             release_config: Release
           - artifact_name: onnxruntime-linux-arm64
             os: ubuntu-20.04
-            cc_version: "8"
-            cxx_version: "8"
+            cc_version: "9"
+            cxx_version: "9"
             arch: aarch64-linux-gnu
             symlink_workaround: true
-            build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --update --build --build_shared_lib
+            build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build/Linux
+            release_config: Release
+          - artifact_name: onnxruntime-osx-arm64
+            os: macos-12
+            build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Darwin CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
+            result_dir: build/MacOS
+            release_config: Release
+          - artifact_name: onnxruntime-osx-x86_64
+            os: macos-12
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Darwin CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
+            result_dir: build/MacOS
+            release_config: Release
+          - artifact_name: onnxruntime-android-x64
+            os: ubuntu-20.04
+            build_opts: --android_abi x86_64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Android CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --android
+            result_dir: build/Android
+            release_config: Release
+          - artifact_name: onnxruntime-android-arm64
+            os: ubuntu-20.04
+            build_opts: --android_abi arm64-v8a --cmake_extra_defines CMAKE_SYSTEM_NAME=Android CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --android
+            result_dir: build/Android
             release_config: Release
           - artifact_name: onnxruntime-ios-arm64
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphoneos --osx_arch arm64 --apple_deploy_target 16.0
             build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphoneos
           - artifact_name: onnxruntime-ios-sim-arm64
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch arm64 --apple_deploy_target 16.0
             build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
           - artifact_name: onnxruntime-ios-sim-x86_64
             os: macos-12
-            build_opts: --config Release --parallel --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
+            build_opts: --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --skip_tests --use_xcode --ios --ios_sysroot iphonesimulator --osx_arch x86_64 --apple_deploy_target 16.0
             build_opts_workaround_protoc: --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc
             result_dir: build/iOS/Release
             release_config: Release-iphonesimulator
@@ -109,8 +165,18 @@ jobs:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
 
+      - name: Install tree
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          install: tree
+
+      - name: Install tree
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS'
+        run: brew install tree
+
       - name: Install build dependencies on ubuntu
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.arch
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -119,8 +185,7 @@ jobs:
               wget \
               qemu-user-binfmt \
               gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
-              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
-              python3
+              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }}
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
@@ -128,17 +193,81 @@ jobs:
           # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
           brew install protobuf@21
 
-      # ONNX Runtime v1.15.1 requires CMake 3.26 or higher.
+      - name: Install Python 3.8
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      #- name: Install Python packages
+      #  if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+      #  run: python -m pip install -r tools/ci_build/github/linux/docker/inference/x64/python/cpu/scripts/requirements.txt
+
+      # ONNX Runtime v1.16.1 requires CMake 3.27 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
-          CMAKE_VERSION: 3.26.4
+          CMAKE_VERSION: 3.27.7
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
+      - name: Set up CUDA
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        uses: Jimver/cuda-toolkit@v0.2.11
+        with:
+          cuda: ${{ matrix.cuda_version }}
+          sub-packages: ${{ matrix.cuda_sub_packages }}
+          method: network
+
+      - name: Set `$CUDA_HOME`
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        shell: bash
+        run: echo "CUDA_HOME=$CUDA_PATH" >> "$GITHUB_ENV"
+
+      - if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
+        run: |
+          msys2.cmd -c "tree 'C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA'"
+
+      #- name: Rename files in VS
+      #  if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
+      #  run: |
+      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.props
+      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.targets
+      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.xml
+
+      - if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
+        shell: bash
+        run: msys2.cmd -c "tree 'C:\Program Files\Microsoft Visual Studio'"
+
+      - name: Set up cuDNN
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        shell: bash
+        run: |
+          mkdir download
+
+          if [ ${{ runner.os }} = Windows ]; then
+            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.zip
+            unzip download/cudnn.zip -d download
+            rm download/cudnn.zip
+          else
+            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.tar.gz
+            tar xvf download/cudnn.tar.gz -C download/
+            rm download/cudnn.tar.gz
+          fi
+
+          cudnn_path=$(find download -maxdepth 1 -name 'cudnn-*')
+          : "${cudnn_path:=./download/cuda}" # https://developer.download.nvidia.com/compute/redist/cudnn/v8.2.4/cudnn-11.4-linux-x64-v8.2.4.15.tgz
+          if [ ${{ runner.os }} = Windows ]; then
+            cudnn_path=$(cygpath -wa "$cudnn_path")
+          else
+            cudnn_path=$(realpath "$cudnn_path")
+          fi
+
+          echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
+
       - name: Configure build environment
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.arch
         run: |
           # Required for arm build
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
@@ -155,8 +284,24 @@ jobs:
           echo "CC=${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}" >> "$GITHUB_ENV"
           echo "CXX=${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}" >> "$GITHUB_ENV"
 
-      - name: Build ONNX Runtime
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
+      ## https://gitlab.com/libeigen/eigen/-/issues/2744
+      ##
+      ## ただし11/6現在、SHA1はこのようになっている。ee201b07085203ea7bd8eb97cbcb31b07cfa3efbはどこに...?
+      ## eigen-3.4.zip      : 123c29af62216a70611d8b826c0e57c361c9a49f
+      ## eigen-3.4.0.zip    : ef24286b7ece8737c99fa831b02941843546c081
+      ## eigen-3.4-rc1.zip  : 1c9b91f7520a85426d4df9b5f59fd3f625dc2dd1
+      #- name: Patch
+      #  if: steps.cache-build-result.outputs.cache-hit != 'true'
+      #  shell: bash
+      #  run: sed -i 's|3\.4/eigen-3\.4\.zip;ee201b07085203ea7bd8eb97cbcb31b07cfa3efb|3.4.0/eigen-3.4.0.zip;ef24286b7ece8737c99fa831b02941843546c081|' ./cmake/deps.txt
+
+      - name: Build ONNX Runtime (Windows)
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
+        shell: cmd
+        run: .\build.bat ${{ matrix.build_opts }}
+
+      - name: Build ONNX Runtime (non-Windows)
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os != 'Windows'
         run: |
           # add --arm for gcc-8: https://github.com/microsoft/onnxruntime/issues/4189
           # skip test: https://github.com/microsoft/onnxruntime/issues/2436
@@ -164,15 +309,30 @@ jobs:
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
           bash ./build.sh ${{ matrix.build_opts }} ${{ matrix.build_opts_workaround_protoc }}
 
+      - name: tree build
+        if: steps.cache-build-result.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          if [ ${{ runner.os }} = Windows ]; then
+            tree() {
+              msys2.cmd -c "tree $1"
+            }
+          fi
+          tree build
+
       - name: Organize artifact
         run: |
           # コピー先artifactを予め削除しておく
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
           # Set library name
-          if [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
+          if [[ ${{ matrix.artifact_name }} == onnxruntime-win-* ]]; then
+            ONNXRUNTIME_NAME=onnxruntime.dll
+          elif [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so.${{ env.ONNXRUNTIME_VERSION }}
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
+          elif [[ ${{ matrix.artifact_name }} == onnxruntime-android-* ]]; then
+            ONNXRUNTIME_NAME=libonnxruntime.so
+          elif [[ ${{ matrix.artifact_name }} == onnxruntime-osx-* ]] || [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
