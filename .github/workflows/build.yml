@@ -123,8 +123,7 @@ jobs:
               wget \
               qemu-user-binfmt \
               gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
-              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }} \
-              python3
+              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }}
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
