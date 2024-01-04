@@ -250,37 +250,33 @@ jobs:
         run: |
           mkdir -p "Framework-aarch64"
           cp -vr xcframework/Frameworks/aarch64/ Framework-aarch64/
-          cp -v "artifact/onnxruntime-aarch64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
-            "Framework-aarch64/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
-          cd Framework-aarch64/onnxruntime.framework/
-          ln ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
-          cd ../..
+
+          lipo -create "artifact/onnxruntime-aarch64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
+            -output "Framework-aarch64/onnxruntime.framework/onnxruntime"
       
       - name: Change aarch64 @rpath 
         run: |          
-          install_name_tool -id "@rpath/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}" \
-            "Framework-aarch64/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
+          install_name_tool -id "@rpath/onnxruntime.framework/onnxruntime" \
+            "Framework-aarch64/onnxruntime.framework/onnxruntime"
       
       - name: Create fat binary
         run: |
           mkdir -p "artifact/onnxruntime-sim"
           lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
             "artifact/onnxruntime-aarch64-apple-ios-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
-            -output "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}"
+            -output "artifact/onnxruntime-sim/onnxruntime"
 
       - name: Create sim Framework 
         run: |
           mkdir -p "Framework-sim"
           cp -vr xcframework/Frameworks/sim/ Framework-sim/
-          cp -v "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}" \
-            "Framework-sim/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
-          cd Framework-sim/onnxruntime.framework/
-          ln ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
-          cd ../..
+          cp -v "artifact/onnxruntime-sim/onnxruntime" \
+            "Framework-sim/onnxruntime.framework/onnxruntime"
+
       - name: Change sim @rpath 
         run: |          
-          install_name_tool -id "@rpath/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}" \
-            "Framework-sim/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
+          install_name_tool -id "@rpath/onnxruntime.framework/onnxruntime" \
+            "Framework-sim/onnxruntime.framework/onnxruntime"
 
       - name: Create XCFramework
         run: |
