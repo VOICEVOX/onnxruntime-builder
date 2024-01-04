@@ -253,7 +253,7 @@ jobs:
           cp -v "artifact/onnxruntime-aarch64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
             "Framework-aarch64/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
           cd Framework-aarch64/onnxruntime.framework/
-          ln -s ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
+          ln ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
           cd ../..
       
       - name: Change aarch64 @rpath 
@@ -275,7 +275,7 @@ jobs:
           cp -v "artifact/onnxruntime-sim/${{ env.ONNXRUNTIME_BASENAME }}" \
             "Framework-sim/onnxruntime.framework/${{ env.ONNXRUNTIME_BASENAME }}"
           cd Framework-sim/onnxruntime.framework/
-          ln -s ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
+          ln ${{ env.ONNXRUNTIME_BASENAME }} onnxruntime
           cd ../..
       - name: Change sim @rpath 
         run: |          
