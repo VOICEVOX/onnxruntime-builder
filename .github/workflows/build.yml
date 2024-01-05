@@ -47,7 +47,7 @@ jobs:
           - artifact_name: onnxruntime-win-x64-gpu-cuda
             os: windows-2022
             cuda_version: 11.8.0
-            cuda_sub_packages: '["cudart", "cuobjdump", "thrust", "cublas_dev", "cufft_dev", "curand_dev", "cusolver_dev", "cusparse_dev", "nvcc", "nvdisasm", "visual_studio_integration"]'
+            cuda_sub_packages: '["cudart", "cuobjdump", "nvcc", "nvdisasm", "thrust", "cublas_dev", "cufft_dev", "curand_dev", "cusolver_dev", "cusparse_dev", "visual_studio_integration"]' # いくつかは不要かもしれない
             cudnn_url: https://developer.download.nvidia.com/compute/redist/cudnn/v8.5.0/local_installers/11.7/cudnn-windows-x86_64-8.5.0.96_cuda11-archive.zip
             build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_cuda --cuda_version 11.8
             result_dir: build/Windows/Release
