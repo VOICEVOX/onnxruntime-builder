@@ -226,17 +226,6 @@ jobs:
         run: echo "CUDA_HOME=$CUDA_PATH" >> "$GITHUB_ENV"
 
       - if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
-        run: |
-          msys2.cmd -c "tree 'C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA'"
-
-      #- name: Rename files in VS
-      #  if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
-      #  run: |
-      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.props
-      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.targets
-      #    cp 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\CUDA '{11.8,11.8.0}.xml
-
-      - if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
         shell: bash
         run: msys2.cmd -c "tree 'C:\Program Files\Microsoft Visual Studio'"
 
@@ -283,17 +272,6 @@ jobs:
           # Set environment variable CC / CXX
           echo "CC=${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}" >> "$GITHUB_ENV"
           echo "CXX=${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}" >> "$GITHUB_ENV"
-
-      ## https://gitlab.com/libeigen/eigen/-/issues/2744
-      ##
-      ## ただし11/6現在、SHA1はこのようになっている。ee201b07085203ea7bd8eb97cbcb31b07cfa3efbはどこに...?
-      ## eigen-3.4.zip      : 123c29af62216a70611d8b826c0e57c361c9a49f
-      ## eigen-3.4.0.zip    : ef24286b7ece8737c99fa831b02941843546c081
-      ## eigen-3.4-rc1.zip  : 1c9b91f7520a85426d4df9b5f59fd3f625dc2dd1
-      #- name: Patch
-      #  if: steps.cache-build-result.outputs.cache-hit != 'true'
-      #  shell: bash
-      #  run: sed -i 's|3\.4/eigen-3\.4\.zip;ee201b07085203ea7bd8eb97cbcb31b07cfa3efb|3.4.0/eigen-3.4.0.zip;ef24286b7ece8737c99fa831b02941843546c081|' ./cmake/deps.txt
 
       - name: Build ONNX Runtime (Windows)
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
