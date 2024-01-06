@@ -192,10 +192,6 @@ jobs:
           # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
           brew install protobuf@21
 
-      #- name: Install Python packages
-      #  if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-      #  run: python -m pip install -r tools/ci_build/github/linux/docker/inference/x64/python/cpu/scripts/requirements.txt
-
       # ONNX Runtime v1.16.1 requires CMake 3.27 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
@@ -215,12 +211,10 @@ jobs:
 
       - name: Set `$CUDA_HOME`
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-        shell: bash
         run: echo "CUDA_HOME=$CUDA_PATH" >> "$GITHUB_ENV"
 
       - name: Set up cuDNN
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-        shell: bash
         run: |
           mkdir download
 
@@ -276,9 +270,8 @@ jobs:
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
           bash ./build.sh ${{ matrix.build_opts }} ${{ matrix.build_opts_workaround_protoc }}
 
-      - name: tree build
+      - name: Inspect the build directory
         if: steps.cache-build-result.outputs.cache-hit != 'true'
-        shell: bash
         run: |
           if [ ${{ runner.os }} = Windows ]; then
             tree() {
