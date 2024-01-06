@@ -192,12 +192,6 @@ jobs:
           # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
           brew install protobuf@21
 
-      - name: Install Python 3.8
-        if: steps.cache-build-result.outputs.cache-hit != 'true'
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-
       #- name: Install Python packages
       #  if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
       #  run: python -m pip install -r tools/ci_build/github/linux/docker/inference/x64/python/cpu/scripts/requirements.txt
