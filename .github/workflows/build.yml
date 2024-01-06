@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.16.2' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.16.3' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
