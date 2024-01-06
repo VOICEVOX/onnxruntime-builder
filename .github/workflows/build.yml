@@ -220,10 +220,6 @@ jobs:
         shell: bash
         run: echo "CUDA_HOME=$CUDA_PATH" >> "$GITHUB_ENV"
 
-      - if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url && runner.os == 'Windows'
-        shell: bash
-        run: msys2.cmd -c "tree 'C:\Program Files\Microsoft Visual Studio'"
-
       - name: Set up cuDNN
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
         shell: bash
