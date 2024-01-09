@@ -238,7 +238,7 @@ jobs:
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
-      - name: Configure build environment
+      - name: Configure build environment for non-x86_64 Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.arch
         run: |
           # Required for arm build
