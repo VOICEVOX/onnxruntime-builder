@@ -69,7 +69,7 @@ jobs:
             os: ubuntu-20.04
             cc_version: "9"
             cxx_version: "9"
-            arch: arm-linux-gnueabihf
+            linux_cross_arch: arm-linux-gnueabihf
             symlink_workaround: true
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build
@@ -78,7 +78,7 @@ jobs:
             os: ubuntu-20.04
             cc_version: "9"
             cxx_version: "9"
-            arch: aarch64-linux-gnu
+            linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build
@@ -125,8 +125,8 @@ jobs:
     env:
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
       # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
-      ARCH_PREFIX: "${{ (matrix.arch != '' && matrix.arch) || '' }}${{ (matrix.arch != '' && '-') || '' }}"
-      ARCH_SUFFIX: "${{ (matrix.arch != '' && '-') || '' }}${{ (matrix.arch != '' && matrix.arch) || '' }}"
+      ARCH_PREFIX: "${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}${{ (matrix.linux_cross_arch != '' && '-') || '' }}"
+      ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
 
@@ -175,7 +175,7 @@ jobs:
         run: brew install tree
 
       - name: Install build dependencies on ubuntu
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.arch
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -239,7 +239,7 @@ jobs:
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
       - name: Configure build environment for non-x86_64 Linux
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.arch
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
           # Required for arm build
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
@@ -248,8 +248,8 @@ jobs:
 
           # Prevent Exec Format Error during cross-compiling
           if ${{ matrix.symlink_workaround }}; then
-            find /usr/${{ matrix.arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.arch }}/ ';'
-            sudo ln -s /usr/${{ matrix.arch }}/lib/ld-linux-*.so* /usr/lib/
+            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.linux_cross_arch }}/ ';'
+            sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
 
           # Set environment variable CC / CXX
