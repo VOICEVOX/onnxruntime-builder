@@ -265,7 +265,8 @@ jobs:
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
           python ./tools/ci_build/build.py --build_dir ./build ${{ matrix.build_opts }} ${{ matrix.build_opts_workaround_protoc }}
 
-      - name: Inspect the build directory
+      - name: Inspect the build directory for debug
+
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
           if [ ${{ runner.os }} = Windows ]; then
