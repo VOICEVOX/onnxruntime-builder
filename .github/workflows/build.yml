@@ -170,7 +170,7 @@ jobs:
         with:
           install: tree
 
-      - name: Install tree
+      - name: Install tree for debug
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS'
         run: brew install tree
 
