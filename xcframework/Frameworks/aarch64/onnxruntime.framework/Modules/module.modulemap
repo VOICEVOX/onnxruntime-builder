@@ -1,0 +1,5 @@
+framework module onnxruntime {
+  export *
+
+  module * { export * }
+}
