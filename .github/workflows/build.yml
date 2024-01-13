@@ -85,12 +85,12 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: onnxruntime-osx-arm64
-            os: macos-12
+            os: macos-11
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Darwin CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build
             release_config: Release
           - artifact_name: onnxruntime-osx-x86_64
-            os: macos-12
+            os: macos-11
             build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Darwin CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build
             release_config: Release
