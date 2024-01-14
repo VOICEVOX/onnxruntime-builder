@@ -300,7 +300,7 @@ jobs:
             # ただし、ortクレートには.pdbとinclude/は不要なので入れない。
             mkdir -p ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib
             git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
-            cp ./{LICENSE,Privacy.md,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
+            cp ./{docs/Privacy.md,LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
             cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/onnxruntime.{dll,lib} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
