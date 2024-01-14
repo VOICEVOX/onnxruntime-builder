@@ -163,7 +163,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v3-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
+
 
       - name: Install tree
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
@@ -309,7 +310,6 @@ jobs:
         with:
           name: ${{ matrix.artifact_name }}
           path: artifact/*
-          retention-days: 7
 
       - name: Generate RELEASE_NAME
         if: env.RELEASE == 'true'
