@@ -147,7 +147,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           repository: microsoft/onnxruntime
           submodules: true
@@ -160,10 +160,10 @@ jobs:
 
       - name: Cache build result
         id: cache-build-result
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v1-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-v3-${{ hashFiles('matrix.json') }}
 
       - name: Install tree
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
@@ -305,11 +305,11 @@ jobs:
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: artifact/*
-          retention-days: 14
+          retention-days: 7
 
       - name: Generate RELEASE_NAME
         if: env.RELEASE == 'true'
@@ -341,17 +341,17 @@ jobs:
 
       - uses: actions/checkout@v3
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: onnxruntime-ios-arm64
           path: artifact/onnxruntime-aarch64-apple-ios
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: onnxruntime-ios-sim-arm64
           path: artifact/onnxruntime-aarch64-apple-ios-sim
 
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: onnxruntime-ios-sim-x86_64
           path: artifact/onnxruntime-x86_64-apple-ios
