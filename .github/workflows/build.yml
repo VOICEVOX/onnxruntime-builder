@@ -296,13 +296,28 @@ jobs:
             echo "Unknown target found : ${{ matrix.artifact_name }}"
             return 1
           fi
-          ./tools/ci_build/github/linux/copy_strip_binary.sh \
-            -r ${{ matrix.result_dir }} \
-            -a ${{ matrix.artifact_name }} \
-            -l $ONNXRUNTIME_NAME \
-            -c ${{ matrix.release_config }} \
-            -s "$(pwd)" \
-            -t "$(git rev-parse HEAD)"
+          if [ ${{ runner.os }} = Windows ]; then
+            # https://github.com/microsoft/onnxruntime/blob/v1.16.3/tools/ci_build/github/azure-pipelines/templates/c-api-artifacts-package-and-publish-steps-windows.yml#L34-L72
+            # ただし、ortクレートには.pdbとinclude/は不要なので入れない。
+            mkdir -p ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib
+            git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
+            cp ./{docs/Privacy.md,LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
+              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
+            cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/onnxruntime.{dll,lib} \
+              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
+            if [ -f ./${{ matrix.result_dir }}/${{ matrix.release_config }}/onnxruntime_providers_cuda.dll ]; then
+              cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}//onnxruntime_providers_{cuda,shared}.{dll,lib} \
+                ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
+            fi
+          else
+            ./tools/ci_build/github/linux/copy_strip_binary.sh \
+              -r ${{ matrix.result_dir }} \
+              -a ${{ matrix.artifact_name }} \
+              -l $ONNXRUNTIME_NAME \
+              -c ${{ matrix.release_config }} \
+              -s "$(pwd)" \
+              -t "$(git rev-parse HEAD)"
+          fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
 
       - name: Upload artifact
