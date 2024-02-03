@@ -149,9 +149,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          repository: microsoft/onnxruntime
+          # repository: microsoft/onnxruntime
+          repository: sevenc-nanashi/onnxruntime
           submodules: true
-          ref: v${{ env.ONNXRUNTIME_VERSION }}
+          ref: fix/trying-fcf-on-arm
+          # ref: v${{ env.ONNXRUNTIME_VERSION }}
 
       - name: Dump matrix context
         env:
