@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.16.3' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.17.0' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
@@ -68,8 +68,8 @@ jobs:
             release_config: Release
           - artifact_name: onnxruntime-linux-armhf
             os: ubuntu-20.04
-            cc_version: "12"
-            cxx_version: "12"
+            cc_version: "10"
+            cxx_version: "10"
             linux_cross_arch: arm-linux-gnueabihf
             symlink_workaround: true
             build_opts: --arm --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=armv7l --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
@@ -77,8 +77,8 @@ jobs:
             release_config: Release
           - artifact_name: onnxruntime-linux-arm64
             os: ubuntu-20.04
-            cc_version: "12"
-            cxx_version: "12"
+            cc_version: "10"
+            cxx_version: "10"
             linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: --arm64 --cmake_extra_defines CMAKE_SYSTEM_NAME=Linux CMAKE_SYSTEM_PROCESSOR=aarch64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
@@ -182,12 +182,6 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
           sudo apt-get update
-
-          # azure.archive.ubuntu.com には gcc-12-aarch64-linux-gnu がないので、archive.ubuntu.com を追加する
-          sudo apt-get install -y software-properties-common
-          sudo add-apt-repository -y \
-              "deb http://archive.ubuntu.com/ubuntu $(lsb_release -sc) main universe"
-
           sudo apt-get install -y \
               build-essential \
               git \
