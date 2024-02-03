@@ -132,10 +132,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/setup-python@v4 
-        with: 
-          python-version: "3.10" 
-      
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
       - name: Version check (semver)
         run: |
           VERSION="${{ env.ONNXRUNTIME_VERSION }}"
@@ -147,13 +147,25 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          # repository: microsoft/onnxruntime
-          repository: sevenc-nanashi/onnxruntime
+          repository: microsoft/onnxruntime
           submodules: true
-          ref: fix/trying-fcf-on-arm
-          # ref: v${{ env.ONNXRUNTIME_VERSION }}
+          ref: v${{ env.ONNXRUNTIME_VERSION }}
+      - name: Checkout builder
+        uses: actions/checkout@v4
+        with:
+          path: builder
+
+      - name: Apply patch
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          # https://stackoverflow.com/a/37939589
+          function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
+
+          if [ $(version ${{ env.ONNXRUNTIME_VERSION }}) -ge $(version 1.17.0) ]; then
+            git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_0.patch
+          fi
 
       - name: Dump matrix context
         env:

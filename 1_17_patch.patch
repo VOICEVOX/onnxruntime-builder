@@ -1,0 +1,22 @@
+diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
+index b2040b24f..e1ad48699 100644
+--- a/tools/ci_build/build.py
++++ b/tools/ci_build/build.py
+@@ -991,6 +991,8 @@ def generate_build_tree(
+     disable_optional_type = "optional" in types_to_disable
+     disable_sparse_tensors = "sparsetensor" in types_to_disable
+ 
++    is_x86_64_build = not (args.android or args.ios or args.build_wasm or args.arm or args.arm64 or args.arm64ec)
++
+     cmake_args += [
+         "-Donnxruntime_RUN_ONNX_TESTS=" + ("ON" if args.enable_onnx_tests else "OFF"),
+         "-Donnxruntime_GENERATE_TEST_REPORTS=ON",
+@@ -1583,7 +1585,7 @@ def generate_build_tree(
+                         "-pipe",
+                         "-ggdb3",
+                     ]
+-                if is_linux() and platform.machine() == "x86_64":
++                if is_linux() and is_x86_64_build:
+                     # The following flags needs GCC 8 and newer
+                     cflags += ["-fstack-clash-protection"]
+                     if not args.rv64:
