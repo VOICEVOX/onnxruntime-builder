@@ -158,13 +158,12 @@ jobs:
           path: builder
 
       - name: Apply patch
-        if: startsWith(matrix.os, 'ubuntu')
         run: |
           # https://stackoverflow.com/a/37939589
           function version { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 
           if [ $(version ${{ env.ONNXRUNTIME_VERSION }}) -ge $(version 1.17.0) ]; then
-            git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_0.patch
+            git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_patch.patch
           fi
 
       - name: Dump matrix context
