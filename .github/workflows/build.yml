@@ -260,6 +260,12 @@ jobs:
           echo "CC=${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}" >> "$GITHUB_ENV"
           echo "CXX=${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}" >> "$GITHUB_ENV"
 
+      - name: Configure to use latest Android NDK
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && startsWith(matrix.artifact_name, 'onnxruntime-android')
+        run: |
+          # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2004-Readme.md#environment-variables-2
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+
       - name: Build ONNX Runtime
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
