@@ -182,6 +182,12 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
           sudo apt-get update
+
+          # azure.archive.ubuntu.com には gcc-12-aarch64-linux-gnu がないので、archive.ubuntu.com を追加する
+          sudo apt-get install -y software-properties-common
+          sudo add-apt-repository -y \
+              "deb https://archive.ubuntu.com/ubuntu $(lsb_release -sc) main universe"
+
           sudo apt-get install -y \
               build-essential \
               git \
