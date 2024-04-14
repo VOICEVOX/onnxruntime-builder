@@ -242,7 +242,6 @@ jobs:
           fi
 
           cudnn_path=$(find download -maxdepth 1 -name 'cudnn-*')
-          : "${cudnn_path:=./download/cuda}" # https://developer.download.nvidia.com/compute/redist/cudnn/v8.2.4/cudnn-11.4-linux-x64-v8.2.4.15.tgz
           if [ ${{ runner.os }} = Windows ]; then
             cudnn_path=$(cygpath -wa "$cudnn_path")
           else
