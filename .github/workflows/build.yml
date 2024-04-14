@@ -218,6 +218,9 @@ jobs:
           cuda: ${{ matrix.cuda_version }}
           sub-packages: ${{ matrix.cuda_sub_packages }}
           method: network
+          # https://github.com/Jimver/cuda-toolkit/issues/315#issuecomment-2016310157
+          use-github-cache: ${{ runner.os != 'Windows' }}
+          use-local-cache: ${{ runner.os != 'Windows' }}
 
       - name: Set `$CUDA_HOME`
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
