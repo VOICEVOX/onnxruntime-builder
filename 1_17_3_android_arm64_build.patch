@@ -1,5 +1,5 @@
 diff --git a/tools/ci_build/build.py b/tools/ci_build/build.py
-index 31f242cce..c42ba9386 100644
+index 85583e11f5..3db1ee8b7b 100644
 --- a/tools/ci_build/build.py
 +++ b/tools/ci_build/build.py
 @@ -987,6 +987,8 @@ def generate_build_tree(
@@ -11,7 +11,7 @@ index 31f242cce..c42ba9386 100644
      cmake_args += [
          "-Donnxruntime_RUN_ONNX_TESTS=" + ("ON" if args.enable_onnx_tests else "OFF"),
          "-Donnxruntime_GENERATE_TEST_REPORTS=ON",
-@@ -1569,7 +1571,7 @@ def generate_build_tree(
+@@ -1571,7 +1573,7 @@ def generate_build_tree(
                          "-pipe",
                          "-ggdb3",
                      ]
