@@ -19,7 +19,7 @@ on:
 env:
   ONNXRUNTIME_VERSION:
     |- # releaseタグ名か、workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.release.tag_name || github.event.inputs.version || '1.17.1' }}
+    ${{ github.event.release.tag_name || github.event.inputs.version || '1.17.3' }}
   RELEASE:
     |- # releaseタグ名か、workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.release.tag_name != '' || github.event.inputs.release == 'true' }}
@@ -159,7 +159,7 @@ jobs:
 
       - name: Apply patch
         run: |
-          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_0_android_arm64_build.patch
+          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
 
       - name: Dump matrix context
         env:
