@@ -39,6 +39,11 @@ jobs:
             build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build/Release
             release_config: Release
+          - artifact_name: onnxruntime-win-x64-gpu-without-cuda
+            os: windows-2022
+            build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_dml
+            result_dir: build/Release
+            release_config: Release
           - artifact_name: onnxruntime-win-x64-gpu
             os: windows-2022
             cuda_version: 12.4.1
@@ -340,9 +345,54 @@ jobs:
           path: artifact/*
 
       - name: Generate RELEASE_NAME
-        if: env.RELEASE == 'true'
         run: |
           echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+
+      - name: Generate specifications
+        run: |
+          build_opts=(${{ matrix.build_opts }})
+
+          for arg in "${build_opts[@]}"; do
+            case "$arg" in
+              CMAKE_SYSTEM_NAME=Windows) os=Windows ;;
+              CMAKE_SYSTEM_NAME=Linux) os=Linux ;;
+              CMAKE_SYSTEM_NAME=Darwin) os=macOS ;;
+              --android) os=Android ;;
+              --ios) os=iOS ;;
+
+              CMAKE_SYSTEM_PROCESSOR=x86_64 | CMAKE_OSX_ARCHITECTURES=x86_64 | x86_64) arch=x86_64 ;;
+              --x86) arch=x86 ;;
+              CMAKE_OSX_ARCHITECTURES=arm64 | --arm64 | arm64 | arm64-v8a) arch=AArch64 ;;
+              --arm) arch=ARMv7 ;;
+
+              --use_cuda) use_cuda=1 ;;
+              --use_dml) use_dml=1 ;;
+            esac
+          done
+
+          # ONNX Runtimeが示す順番に従う
+          if [ "$use_cuda" = 1 ]; then
+            devices=/CUDA
+          fi
+          if [ "$use_dml" = 1 ]; then
+            devices+=/DirectML
+          fi
+          devices+=/CPU
+          devices=${devices:1}
+
+          specs="<tr>"
+          specs+="<td>$os</td>"
+          specs+="<td>$arch</td>"
+          specs+="<td>$devices</td>"
+          specs+="<td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$RELEASE_NAME.tgz\">$RELEASE_NAME.tgz</a></td>"
+          specs+='</tr>'
+          cat <<< "$specs" > "$RELEASE_NAME.html"
+
+      - name: Upload specifications
+        uses: actions/upload-artifact@v4
+        with:
+          name: specs-${{ matrix.artifact_name }}
+          path: ${{ env.RELEASE_NAME }}.html
 
       - name: Rearchive artifact
         if: env.RELEASE == 'true'
@@ -361,10 +411,15 @@ jobs:
   build-xcframework:
     needs: build-onnxruntime
     runs-on: macos-12
+    outputs:
+      release-name: ${{ steps.gen-envs.outputs.release-name }}
     steps:
       - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
+        id: gen-envs
         run: |
-          echo "RELEASE_NAME=onnxruntime-ios-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+          RELEASE_NAME=onnxruntime-ios-xcframework-${{ env.ONNXRUNTIME_VERSION }}
+          echo "release-name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
           echo "ONNXRUNTIME_BASENAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v3
@@ -442,3 +497,76 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.ONNXRUNTIME_VERSION }} # ==> github.event.release.tag_name
           file: ${{ env.RELEASE_NAME }}.zip
+
+  build-spec-table:
+    needs: [build-onnxruntime, build-xcframework]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Download specifications
+        uses: actions/download-artifact@v4
+        with:
+          path: specs
+          pattern: specs-*
+          merge-multiple: true
+
+      - name: Construct release notes
+        run: |
+          onnxruntime_version_hyphenated=$(tr . - <<< "$ONNXRUNTIME_VERSION")
+          release_notes=$(
+            cat <<EOF
+          ## 動的ライブラリ
+
+          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-dylibs">
+            <thead>
+              <tr>
+                <th>OS</th>
+                <th>ｱｰｷﾃｸﾁｬ</th>
+                <th>デバイス</th>
+                <th>名前</th>
+              </tr>
+            </thead>
+            <tbody>
+          EOF
+          )
+          release_notes+=$'\n'
+          for body in specs/*.html; do
+            release_notes+=$'    '
+            release_notes+=$(< "$body")
+            release_notes+=$'\n'
+          done
+          release_notes+=$(
+            cat <<EOF
+            </tbody>
+          </table>
+
+          ## XCFramework
+
+          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-xcframeworks">
+            <thead>
+              <tr>
+                <th>OS</th>
+                <th>アーキテクチャ</th>
+                <th>デバイス</th>
+                <th>名前</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>iOS</td>
+                <td>AArch64/x86_64</td>
+                <td>CPU</td>
+                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
+              </tr>
+            </tbody>
+          </table>
+          EOF
+          )
+          tee release-notes.md >&2 <<< "$release_notes"
+
+      - name: Update release notes
+        if: env.RELEASE == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          prerelease: true
+          tag_name: ${{ env.ONNXRUNTIME_VERSION }}
