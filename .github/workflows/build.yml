@@ -2,8 +2,6 @@ name: Build C++ Shared Library
 
 on:
   push:
-    branches:
-      # - main
   release:
     types:
       - published
@@ -297,13 +295,14 @@ jobs:
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
           # Set library name
-          if [[ ${{ matrix.artifact_name }} == onnxruntime-win-* ]]; then
+          ARTIFACT_NAME=${{ matrix.artifact_name }}
+          if [[ "$ARTIFACT_NAME" == onnxruntime-win-* ]]; then
             ONNXRUNTIME_NAME=onnxruntime.dll
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-linux-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so.${{ env.ONNXRUNTIME_VERSION }}
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-android-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-android-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-osx-* ]] || [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-osx-* ]] || [[ "$ARTIFACT_NAME" == onnxruntime-ios-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
@@ -342,7 +341,7 @@ jobs:
       - name: Generate RELEASE_NAME
         if: env.RELEASE == 'true'
         run: |
-          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> "$GITHUB_ENV"
 
       - name: Rearchive artifact
         if: env.RELEASE == 'true'
@@ -364,7 +363,7 @@ jobs:
     steps:
       - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
         run: |
-          echo "RELEASE_NAME=onnxruntime-ios-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=onnxruntime-ios-xcframework-${{ env.ONNXRUNTIME_VERSION }}" >> "$GITHUB_ENV"
           echo "ONNXRUNTIME_BASENAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v3
