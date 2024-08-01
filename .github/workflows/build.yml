@@ -505,12 +505,14 @@ jobs:
 
       - name: Construct release notes
         run: |
-          onnxruntime_version_hyphenated=$(tr . - <<< "$ONNXRUNTIME_VERSION")
           release_notes=$(
             cat <<EOF
           ## 動的ライブラリ
 
-          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-dylibs">
+          <table
+            data-voicevox-onnxruntime-specs-format-version="1"
+            data-voicevox-onnxruntime-specs-type="dylibs"
+            data-voicevox-onnxruntime-specs-onnxruntime-version="$ONNXRUNTIME_VERSION">
             <thead>
               <tr>
                 <th>OS</th>
@@ -540,7 +542,10 @@ jobs:
 
           ## XCFramework
 
-          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-xcframeworks">
+          <table
+            data-voicevox-onnxruntime-specs-format-version="1"
+            data-voicevox-onnxruntime-specs-type="xcframeworks"
+            data-voicevox-onnxruntime-specs-onnxruntime-version="$ONNXRUNTIME_VERSION">
             <thead>
               <tr>
                 <th>OS</th>
