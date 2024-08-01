@@ -364,29 +364,29 @@ jobs:
             esac
           done
 
-          # ONNX Runtimeが示す順番に従う
-          if [ "$use_cuda" = 1 ]; then
-            devices=/CUDA
-          fi
-          if [ "$use_dml" = 1 ]; then
-            devices+=/DirectML
-          fi
-          devices+=/CPU
-          devices=${devices:1}
-
-          specs="<tr>"
-          specs+="<td>$os</td>"
-          specs+="<td>$arch</td>"
-          specs+="<td>$devices</td>"
-          specs+="<td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$RELEASE_NAME.tgz\">$RELEASE_NAME.tgz</a></td>"
-          specs+='</tr>'
-          cat <<< "$specs" > "$RELEASE_NAME.html"
+          jq '
+            {
+              "os": $os,
+              "arch": $arch,
+              # ONNX Runtimeが示す順番に従う
+              "devices": [
+                ("CUDA" | select($use_cuda == "1")),
+                ("DirectML" | select($use_dml == "1")),
+                "CPU"
+              ] | join("/")
+            }' \
+            -n \
+            --arg os "$os" \
+            --arg arch "$arch" \
+            --arg use_cuda "$use_cuda" \
+            --arg use_dml "$use_dml" \
+            > "$RELEASE_NAME.json"
 
       - name: Upload specifications
         uses: actions/upload-artifact@v4
         with:
           name: specs-${{ matrix.artifact_name }}
-          path: ${{ env.RELEASE_NAME }}.html
+          path: ${{ env.RELEASE_NAME }}.json
 
       - name: Rearchive artifact
         if: env.RELEASE == 'true'
@@ -523,10 +523,15 @@ jobs:
           EOF
           )
           release_notes+=$'\n'
-          for body in specs/*.html; do
-            release_notes+=$'    '
-            release_notes+=$(< "$body")
-            release_notes+=$'\n'
+          for specs_file in specs/*.json; do
+            specs=$(< "$specs_file")
+            release_name=$(basename "${specs_file%.json}")
+            release_notes+=$'    <tr>\n'
+            release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
             cat <<EOF
