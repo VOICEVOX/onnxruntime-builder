@@ -2,8 +2,6 @@ name: Build C++ Shared Library
 
 on:
   push:
-    branches:
-      # - main
   release:
     types:
       - published
@@ -302,13 +300,14 @@ jobs:
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
           # Set library name
-          if [[ ${{ matrix.artifact_name }} == onnxruntime-win-* ]]; then
+          ARTIFACT_NAME=${{ matrix.artifact_name }}
+          if [[ "$ARTIFACT_NAME" == onnxruntime-win-* ]]; then
             ONNXRUNTIME_NAME=onnxruntime.dll
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-linux-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-linux-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so.${{ env.ONNXRUNTIME_VERSION }}
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-android-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-android-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so
-          elif [[ ${{ matrix.artifact_name }} == onnxruntime-osx-* ]] || [[ ${{ matrix.artifact_name }} == onnxruntime-ios-* ]]; then
+          elif [[ "$ARTIFACT_NAME" == onnxruntime-osx-* ]] || [[ "$ARTIFACT_NAME" == onnxruntime-ios-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
@@ -346,7 +345,7 @@ jobs:
 
       - name: Generate RELEASE_NAME
         run: |
-          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> $GITHUB_ENV
+          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> "$GITHUB_ENV"
 
       - name: Generate specifications
         run: |
@@ -370,29 +369,29 @@ jobs:
             esac
           done
 
-          # ONNX Runtimeが示す順番に従う
-          if [ "$use_cuda" = 1 ]; then
-            devices=/CUDA
-          fi
-          if [ "$use_dml" = 1 ]; then
-            devices+=/DirectML
-          fi
-          devices+=/CPU
-          devices=${devices:1}
-
-          specs="<tr>"
-          specs+="<td>$os</td>"
-          specs+="<td>$arch</td>"
-          specs+="<td>$devices</td>"
-          specs+="<td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$RELEASE_NAME.tgz\">$RELEASE_NAME.tgz</a></td>"
-          specs+='</tr>'
-          cat <<< "$specs" > "$RELEASE_NAME.html"
+          jq '
+            {
+              "os": $os,
+              "arch": $arch,
+              # ONNX Runtimeが示す順番に従う
+              "devices": [
+                ("CUDA" | select($use_cuda == "1")),
+                ("DirectML" | select($use_dml == "1")),
+                "CPU"
+              ] | join("/")
+            }' \
+            -n \
+            --arg os "$os" \
+            --arg arch "$arch" \
+            --arg use_cuda "$use_cuda" \
+            --arg use_dml "$use_dml" \
+            > "$RELEASE_NAME.json"
 
       - name: Upload specifications
         uses: actions/upload-artifact@v4
         with:
           name: specs-${{ matrix.artifact_name }}
-          path: ${{ env.RELEASE_NAME }}.html
+          path: ${{ env.RELEASE_NAME }}.json
 
       - name: Rearchive artifact
         if: env.RELEASE == 'true'
@@ -511,12 +510,11 @@ jobs:
 
       - name: Construct release notes
         run: |
-          onnxruntime_version_hyphenated=$(tr . - <<< "$ONNXRUNTIME_VERSION")
           release_notes=$(
             cat <<EOF
           ## 動的ライブラリ
 
-          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-dylibs">
+          <table data-voicevox-onnxruntime-specs-format-version="1" data-voicevox-onnxruntime-specs-type="dylibs">
             <thead>
               <tr>
                 <th>OS</th>
@@ -529,10 +527,15 @@ jobs:
           EOF
           )
           release_notes+=$'\n'
-          for body in specs/*.html; do
-            release_notes+=$'    '
-            release_notes+=$(< "$body")
-            release_notes+=$'\n'
+          for specs_file in specs/*.json; do
+            specs=$(< "$specs_file")
+            release_name=$(basename "${specs_file%.json}")
+            release_notes+=$'    <tr>\n'
+            release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
             cat <<EOF
@@ -541,11 +544,11 @@ jobs:
 
           ## XCFramework
 
-          <table id="voicevox-onnxruntime-specs-v1format-v$onnxruntime_version_hyphenated-xcframeworks">
+          <table data-voicevox-onnxruntime-specs-format-version="1" data-voicevox-onnxruntime-specs-type="xcframeworks">
             <thead>
               <tr>
                 <th>OS</th>
-                <th>アーキテクチャ</th>
+                <th>ｱｰｷﾃｸﾁｬ</th>
                 <th>デバイス</th>
                 <th>名前</th>
               </tr>
