@@ -171,6 +171,13 @@ jobs:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
 
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@main
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Linux' && contains(matrix.build_opts, '--use_cuda')
+        with:
+          tool-cache: false
+          large-packages: false
+          swap-storage: false
 
       - name: Install tree
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
