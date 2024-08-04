@@ -37,7 +37,7 @@ jobs:
             build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib
             result_dir: build/Release
             release_config: Release
-          - artifact_name: onnxruntime-win-x64-gpu-without-cuda
+          - artifact_name: onnxruntime-win-x64-gpu-cuda
             os: windows-2022
             build_opts: --cmake_extra_defines CMAKE_SYSTEM_NAME=Windows CMAKE_SYSTEM_PROCESSOR=x86_64 --config Release --parallel --compile_no_warning_as_error --update --build --build_shared_lib --use_dml
             result_dir: build/Release
