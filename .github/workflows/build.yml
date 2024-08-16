@@ -177,7 +177,7 @@ jobs:
               --apple_sysroot iphoneos
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # https://github.com/VOICEVOX/onnxruntime-builder/issues/23#issuecomment-1599594381
+              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             result_dir: build/Release
             release_config: Release-iphoneos
           - artifact_name: onnxruntime-ios-sim-arm64
@@ -190,7 +190,7 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # https://github.com/VOICEVOX/onnxruntime-builder/issues/23#issuecomment-1599594381
+              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             result_dir: build/Release
             release_config: Release-iphonesimulator
           - artifact_name: onnxruntime-ios-sim-x86_64
@@ -203,7 +203,7 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch x86_64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # https://github.com/VOICEVOX/onnxruntime-builder/issues/23#issuecomment-1599594381
+              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             result_dir: build/Release
             release_config: Release-iphonesimulator
 
