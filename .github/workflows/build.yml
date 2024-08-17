@@ -365,7 +365,7 @@ jobs:
       - name: Build ONNX Runtime
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
-          # TODO: ↓ この記述は VOICEVOX/voicevox_core#41 時点でのarmhfビルドに対するもの。`CMAKE_SYSTEM_{NAME,PROCESSOR}`が必要のないケースが多いはず。例えばv1.17時点では、AndroidとiOSのビルドではcpuinfoのケアまでちゃんとされているはず。
+          # TODO: ↓ この記述は VOICEVOX/voicevox_core#41 時点でのarmhfビルドに対するもの。`CMAKE_SYSTEM_{NAME,PROCESSOR}`が必要のないケースが多いはず。例えばv1.17時点では、AndroidとiOSのビルドではcpuinfoのケアまでちゃんとされているはず。なので調べる。
           # add --arm for gcc-8: https://github.com/microsoft/onnxruntime/issues/4189
           # skip test: https://github.com/microsoft/onnxruntime/issues/2436
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
