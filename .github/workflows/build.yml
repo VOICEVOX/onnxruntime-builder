@@ -222,7 +222,7 @@ jobs:
 
       - name: Version check (semver)
         run: |
-          VERSION="${{ env.ONNXRUNTIME_VERSION }}"
+          VERSION=$ONNXRUNTIME_VERSION
           if [[ $VERSION =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)(-([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$ ]]; then
             echo "Version: $VERSION"
           else
@@ -284,8 +284,8 @@ jobs:
               git \
               wget \
               qemu-user-binfmt \
-              gcc-${{ matrix.cc_version }}${{ env.ARCH_SUFFIX }} \
-              g++-${{ matrix.cxx_version }}${{ env.ARCH_SUFFIX }}
+              gcc-${{ matrix.cc_version }}"$ARCH_SUFFIX" \
+              g++-${{ matrix.cxx_version }}"$ARCH_SUFFIX"
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
@@ -299,7 +299,7 @@ jobs:
         env:
           CMAKE_VERSION: 3.27.7
         run: |
-          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v${{ env.CMAKE_VERSION }}/cmake-${{ env.CMAKE_VERSION }}-linux-x86_64.sh"
+          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Set up CUDA
@@ -353,8 +353,8 @@ jobs:
           fi
 
           # Set environment variable CC / CXX
-          echo "CC=${{ env.ARCH_PREFIX }}gcc-${{ matrix.cc_version }}" >> "$GITHUB_ENV"
-          echo "CXX=${{ env.ARCH_PREFIX }}g++-${{ matrix.cxx_version }}" >> "$GITHUB_ENV"
+          echo CC="$ARCH_PREFIX"gcc-${{ matrix.cc_version }} >> "$GITHUB_ENV"
+          echo CXX="$ARCH_PREFIX"g++-${{ matrix.cxx_version }} >> "$GITHUB_ENV"
 
       - name: Configure to use latest Android NDK
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && startsWith(matrix.artifact_name, 'onnxruntime-android')
@@ -405,11 +405,11 @@ jobs:
           if [[ "$ARTIFACT_NAME" == onnxruntime-win-* ]]; then
             ONNXRUNTIME_NAME=onnxruntime.dll
           elif [[ "$ARTIFACT_NAME" == onnxruntime-linux-* ]]; then
-            ONNXRUNTIME_NAME=libonnxruntime.so.${{ env.ONNXRUNTIME_VERSION }}
+            ONNXRUNTIME_NAME="libonnxruntime.so.$ONNXRUNTIME_VERSION"
           elif [[ "$ARTIFACT_NAME" == onnxruntime-android-* ]]; then
             ONNXRUNTIME_NAME=libonnxruntime.so
           elif [[ "$ARTIFACT_NAME" == onnxruntime-osx-* ]] || [[ "$ARTIFACT_NAME" == onnxruntime-ios-* ]]; then
-            ONNXRUNTIME_NAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib
+            ONNXRUNTIME_NAME="libonnxruntime.$ONNXRUNTIME_VERSION.dylib"
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
             return 1
@@ -431,7 +431,7 @@ jobs:
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
               -r ${{ matrix.result_dir }} \
               -a ${{ matrix.artifact_name }} \
-              -l $ONNXRUNTIME_NAME \
+              -l "$ONNXRUNTIME_NAME" \
               -c ${{ matrix.release_config }} \
               -s "$(pwd)" \
               -t "$(git rev-parse HEAD)"
@@ -446,7 +446,7 @@ jobs:
 
       - name: Generate RELEASE_NAME
         run: |
-          echo "RELEASE_NAME=${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_VERSION }}" >> "$GITHUB_ENV"
+          echo RELEASE_NAME=${{ matrix.artifact_name }}-"$ONNXRUNTIME_VERSION" >> "$GITHUB_ENV"
 
       - name: Generate specifications
         run: |
@@ -499,8 +499,8 @@ jobs:
       - name: Rearchive artifact
         if: env.RELEASE == 'true'
         run: |
-          mv artifact/ "${{ env.RELEASE_NAME }}"
-          tar cfz "${{ env.RELEASE_NAME }}.tgz" "${{ env.RELEASE_NAME }}/"
+          mv artifact/ "$RELEASE_NAME"
+          tar cfz "$RELEASE_NAME.tgz" "$RELEASE_NAME/"
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
@@ -519,10 +519,10 @@ jobs:
       - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
         id: gen-envs
         run: |
-          RELEASE_NAME=onnxruntime-ios-xcframework-${{ env.ONNXRUNTIME_VERSION }}
+          RELEASE_NAME=onnxruntime-ios-xcframework-$ONNXRUNTIME_VERSION
           echo "release-name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=libonnxruntime.${{ env.ONNXRUNTIME_VERSION }}.dylib" >> "$GITHUB_ENV"
+          echo "ONNXRUNTIME_BASENAME=libonnxruntime.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v3
 
@@ -552,7 +552,7 @@ jobs:
           mkdir -p "Framework-aarch64"
           cp -vr xcframework/Frameworks/aarch64/ Framework-aarch64/
 
-          lipo -create "artifact/onnxruntime-aarch64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
+          lipo -create "artifact/onnxruntime-aarch64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
             -output "Framework-aarch64/onnxruntime.framework/onnxruntime"
 
       - name: Change aarch64 @rpath
@@ -563,8 +563,8 @@ jobs:
       - name: Create fat binary
         run: |
           mkdir -p "artifact/onnxruntime-sim"
-          lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
-            "artifact/onnxruntime-aarch64-apple-ios-sim/lib/${{ env.ONNXRUNTIME_BASENAME }}" \
+          lipo -create "artifact/onnxruntime-x86_64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
+            "artifact/onnxruntime-aarch64-apple-ios-sim/lib/$ONNXRUNTIME_BASENAME" \
             -output "artifact/onnxruntime-sim/onnxruntime"
 
       - name: Create sim Framework
@@ -581,16 +581,16 @@ jobs:
 
       - name: Create XCFramework
         run: |
-          mkdir -p "artifact/${{ env.ONNXRUNTIME_BASENAME }}"
+          mkdir -p "artifact/$ONNXRUNTIME_BASENAME"
           xcodebuild -create-xcframework \
             -framework Framework-sim/onnxruntime.framework \
             -framework Framework-aarch64/onnxruntime.framework \
-            -output "artifact/${{ env.ONNXRUNTIME_BASENAME }}/onnxruntime.xcframework"
+            -output "artifact/$ONNXRUNTIME_BASENAME/onnxruntime.xcframework"
 
       - name: Archive artifact
         run: |
-          cd artifact/${{ env.ONNXRUNTIME_BASENAME }}
-          7z a "../../${{ env.RELEASE_NAME }}.zip" "onnxruntime.xcframework"
+          cd "artifact/$ONNXRUNTIME_BASENAME"
+          7z a "../../$RELEASE_NAME.zip" "onnxruntime.xcframework"
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
