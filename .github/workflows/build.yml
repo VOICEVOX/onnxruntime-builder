@@ -219,6 +219,7 @@ jobs:
       ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
+    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
 
     steps:
       - uses: actions/setup-python@v4
