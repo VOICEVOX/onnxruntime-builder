@@ -13,6 +13,11 @@ on:
       release:
         description: "リリースするかどうか"
         type: boolean
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+        default: false
 
 env:
   ONNXRUNTIME_VERSION:
@@ -214,6 +219,7 @@ jobs:
       ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
+    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
 
     steps:
       - uses: actions/setup-python@v4
@@ -437,6 +443,14 @@ jobs:
               -t "$(git rev-parse HEAD)"
           fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
+
+      - name: Code signing (Windows)
+        if: runner.os == 'Windows' && inputs.code_signing
+        run: find ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        env:
+          ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
+          ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
+          ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
