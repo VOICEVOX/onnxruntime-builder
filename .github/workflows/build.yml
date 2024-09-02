@@ -473,8 +473,7 @@ jobs:
             -F file2=@${{ matrix.artifact_name }}_stderr.txt \
             > /dev/null
         env:
-          PRODUCTION_DISCORD_WEBHOOK: ${{ secrets.PRODUCTION_DISCORD_WEBHOOK}}
-
+          PRODUCTION_DISCORD_WEBHOOK: ${{ secrets.PRODUCTION_DISCORD_WEBHOOK }}
 
       - name: Inspect the build directory for debug
 
