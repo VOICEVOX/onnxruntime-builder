@@ -24,7 +24,8 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ github.event.inputs.version || '1.17.3' }}
+    ${{ inputs.version || '1.17.3' }}
+
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ github.event.inputs.release == 'true' }}
