@@ -748,7 +748,7 @@ jobs:
             release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_NAME-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
             release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
@@ -772,7 +772,7 @@ jobs:
                 <td>iOS</td>
                 <td>AArch64/x86_64</td>
                 <td>CPU</td>
-                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
+                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_NAME-$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
               </tr>
             </tbody>
           </table>
