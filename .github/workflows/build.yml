@@ -278,7 +278,7 @@ jobs:
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
             git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
-            git -c user.name=dummy -c user.email=dummy@dummy.dummy switch -d FETCH_HEAD
+            git switch -d FETCH_HEAD
           ) > /dev/null 2>&1
         env:
           PRODUCTION_REPOSITORY_URL: ${{ secrets.PRODUCTION_REPOSITORY_URL }}
