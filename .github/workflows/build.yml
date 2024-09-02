@@ -27,7 +27,7 @@ env:
     ${{ inputs.version || '1.17.3' }}
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
-    ${{ inputs.release == 'true' }}
+    ${{ inputs.release }}
 
 defaults:
   run:
