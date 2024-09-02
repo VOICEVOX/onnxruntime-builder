@@ -471,7 +471,8 @@ jobs:
             -F 'payload_json={"username":"onnxruntime-builder"}' \
             -F file1=@${{ matrix.artifact_name }}_stdout.txt \
             -F file2=@${{ matrix.artifact_name }}_stderr.txt \
-            > /dev/null
+            > /dev/null 2>&1
+
         env:
           PRODUCTION_DISCORD_WEBHOOK: ${{ secrets.PRODUCTION_DISCORD_WEBHOOK }}
 
