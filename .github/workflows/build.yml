@@ -466,14 +466,15 @@ jobs:
         if: failure() && steps.build.outcome == 'failure' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
         run: |
           curl \
-            "$DISCORD_WEBHOOK" \
+            "$PRODUCTION_DISCORD_WEBHOOK" \
             -sf \
             -F 'payload_json={"username":"onnxruntime-builder"}' \
             -F file1=@${{ matrix.artifact_name }}_stdout.txt \
             -F file2=@${{ matrix.artifact_name }}_stderr.txt \
             > /dev/null
         env:
-          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          PRODUCTION_DISCORD_WEBHOOK: ${{ secrets.PRODUCTION_DISCORD_WEBHOOK}}
+
 
       - name: Inspect the build directory for debug
 
