@@ -14,7 +14,6 @@ on:
         options:
           - onnxruntime
           - voicevox_onnxruntime
-
       release:
         description: "リリースするかどうか"
         type: boolean
@@ -22,7 +21,7 @@ on:
 env:
   ONNXRUNTIME_NAME:
     |-
-    ${{ inputs.name || 'onnxruntime' }}
+    ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
     ${{ github.event.inputs.version || '1.17.3' }}
@@ -41,7 +40,7 @@ jobs:
       matrix:
         # TODO: 外せる`--compile_no_warning_as_error`は外す
         include:
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-win-x64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64
             os: windows-2022
             build_opts: |-
               --compile_no_warning_as_error
@@ -51,7 +50,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-win-x64-dml
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
             os: windows-2022
             build_opts: |-
               --compile_no_warning_as_error
@@ -62,7 +61,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-win-x64-cuda
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
             os: windows-2022
             cuda_version: 12.4.1
             # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
@@ -78,7 +77,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-win-x86
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
             build_opts: |-
               --compile_no_warning_as_error
@@ -89,7 +88,7 @@ jobs:
               Rust_CARGO_TARGET=i686-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-linux-x64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
             os: ubuntu-20.04
             build_opts: |-
               --compile_no_warning_as_error
@@ -99,7 +98,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-linux-x64-cuda
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
             os: ubuntu-20.04
             cuda_version: 12.4.1
             cuda_sub_packages: "[]" # デフォルト
@@ -113,7 +112,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-linux-armhf
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-20.04
             cc_version: "10"
             cxx_version: "10"
@@ -128,7 +127,7 @@ jobs:
               Rust_CARGO_TARGET=armv7-unknown-linux-gnueabihf
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-linux-arm64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-20.04
             cc_version: "10"
             cxx_version: "10"
@@ -143,7 +142,7 @@ jobs:
               Rust_CARGO_TARGET=aarch64-unknown-linux-gnu
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-osx-arm64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
             os: macos-12
             build_opts: |-
               --compile_no_warning_as_error
@@ -153,7 +152,7 @@ jobs:
               Rust_CARGO_TARGET=aarch64-apple-darwin
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-osx-x86_64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
             os: macos-12
             build_opts: |-
               --compile_no_warning_as_error
@@ -163,7 +162,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-apple-darwin
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-android-x64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
             os: ubuntu-20.04
             build_opts: |-
               --compile_no_warning_as_error
@@ -175,7 +174,7 @@ jobs:
               Rust_CARGO_TARGET=x86_64-linux-android
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-android-arm64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
             os: ubuntu-20.04
             build_opts: |-
               --compile_no_warning_as_error
@@ -187,7 +186,7 @@ jobs:
               Rust_CARGO_TARGET=aarch64-linux-android
             result_dir: build
             release_config: Release
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-ios-arm64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
             os: macos-12
             build_opts: |-
               --compile_no_warning_as_error
@@ -202,7 +201,7 @@ jobs:
               Rust_CARGO_TARGET=aarch64-apple-ios
             result_dir: build/Release
             release_config: Release-iphoneos
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-ios-sim-arm64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
             os: macos-12
             build_opts: |-
               --compile_no_warning_as_error
@@ -217,7 +216,7 @@ jobs:
               Rust_CARGO_TARGET=aarch64-apple-ios-sim
             result_dir: build/Release
             release_config: Release-iphonesimulator
-          - artifact_name: ${{ inputs.name || 'onnxruntime' }}-ios-sim-x86_64
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
             os: macos-12
             build_opts: |-
               --compile_no_warning_as_error
