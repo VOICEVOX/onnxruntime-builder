@@ -25,10 +25,9 @@ env:
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
     ${{ inputs.version || '1.17.3' }}
-
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
-    ${{ github.event.inputs.release == 'true' }}
+    ${{ inputs.release == 'true' }}
 
 defaults:
   run:
