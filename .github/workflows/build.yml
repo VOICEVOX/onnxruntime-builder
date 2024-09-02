@@ -7,13 +7,14 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
-      name:
-        description: "名前"
+      target:
+        description: "ビルド対象"
         type: choice
         default: onnxruntime
         options:
           - onnxruntime
           - voicevox_onnxruntime
+
       release:
         description: "リリースするかどうか"
         type: boolean
