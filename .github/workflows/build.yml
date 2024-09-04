@@ -494,8 +494,6 @@ jobs:
 
       - name: Organize artifact
         run: |
-          # TODO: Privacy.mdは要らないのでは？
-
           # コピー先artifactを予め削除しておく
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
@@ -538,12 +536,9 @@ jobs:
             rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$ONNXRUNTIME_NAME" = voicevox_onnxruntime ]; then
-            for filename in LICENSE README.md; do
-              mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}"$filename"
-            done
-            for filename in Privacy.md ThirdPartyNotices.txt; do
-              mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,Ort}"$filename"
-            done
+            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}LICENSE
+            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}README.md
+            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
             mv ./VOICEVOX_LICENSE.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/LICENSE.md
           fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
