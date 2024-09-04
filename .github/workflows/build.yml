@@ -24,7 +24,7 @@ on:
         default: false
 
 env:
-  ONNXRUNTIME_NAME:
+  TARGET_LIBRARY:
     |-
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
@@ -263,7 +263,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        if: env.ONNXRUNTIME_NAME == 'onnxruntime'
+        if: env.TARGET_LIBRARY == 'onnxruntime'
         with:
           repository: microsoft/onnxruntime
           submodules: true
@@ -271,7 +271,7 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v4
-        if: env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         with:
           repository: microsoft/onnxruntime
           submodules: true
@@ -279,7 +279,7 @@ jobs:
           token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
 
       - name: Switch to production
-        if: env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
@@ -393,7 +393,7 @@ jobs:
 
       - name: Extract Rust toolchain and target triple
         id: rust-toolchain-and-target-triple
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           build_opts=(
           ${{ matrix.build_opts }}
@@ -402,18 +402,18 @@ jobs:
           echo "target=$(sed -E 's/.*Rust_CARGO_TARGET=([a-z0-9_-]+).*/\1/' <<< "${build_opts[*]}")" >> "$GITHUB_OUTPUT"
 
       - name: Set up Rust
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.rust-toolchain-and-target-triple.outputs.toolchain }}
           targets: ${{ steps.rust-toolchain-and-target-triple.outputs.target }}
 
       - name: Install cargo-binstall
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         uses: taiki-e/install-action@cargo-binstall
 
       - name: Install cxxbridge-cmd
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           md=$(cargo metadata --manifest-path ./vv_bin/Cargo.toml --format-version 1)
           version=$(jq -r '.packages[] | select(.name == "cxx").version' <<< "$md")
@@ -465,11 +465,11 @@ jobs:
             --parallel \
             --build_shared_lib \
             "${build_opts[@]}" \
-            1>${{ env.ONNXRUNTIME_NAME == 'onnxruntime' && '&1' || format('{0}_stdout.txt', matrix.artifact_name) }} \
-            2>${{ env.ONNXRUNTIME_NAME == 'onnxruntime' && '&2' || format('{0}_stderr.txt', matrix.artifact_name) }}
+            1>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&1' || format('{0}_stdout.txt', matrix.artifact_name) }} \
+            2>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&2' || format('{0}_stderr.txt', matrix.artifact_name) }}
 
       - name: Send build log to Discord
-        if: failure() && steps.build.outcome == 'failure' && env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           curl \
             "$PRODUCTION_DISCORD_WEBHOOK" \
@@ -499,15 +499,15 @@ jobs:
           rm -rf ./artifact
           # Set library name
           ARTIFACT_NAME=${{ matrix.artifact_name }}
-          if [[ "$ARTIFACT_NAME" == "$ONNXRUNTIME_NAME"-win-* ]]; then
+          if [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-win-* ]]; then
             # FIXME: この分岐はもう使わないのでは?
-            onnxruntime_filename=$ONNXRUNTIME_NAME.dll
-          elif [[ "$ARTIFACT_NAME" == "$ONNXRUNTIME_NAME"-linux-* ]]; then
-            onnxruntime_filename="lib$ONNXRUNTIME_NAME.so.$ONNXRUNTIME_VERSION"
-          elif [[ "$ARTIFACT_NAME" == "$ONNXRUNTIME_NAME"-android-* ]]; then
-            onnxruntime_filename="lib$ONNXRUNTIME_NAME.so"
-          elif [[ "$ARTIFACT_NAME" == "$ONNXRUNTIME_NAME"-osx-* ]] || [[ "$ARTIFACT_NAME" == "$ONNXRUNTIME_NAME"-ios-* ]]; then
-            onnxruntime_filename="lib$ONNXRUNTIME_NAME.$ONNXRUNTIME_VERSION.dylib"
+            onnxruntime_filename=$TARGET_LIBRARY.dll
+          elif [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-linux-* ]]; then
+            onnxruntime_filename="lib$TARGET_LIBRARY.so.$ONNXRUNTIME_VERSION"
+          elif [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-android-* ]]; then
+            onnxruntime_filename="lib$TARGET_LIBRARY.so"
+          elif [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-osx-* ]] || [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-ios-* ]]; then
+            onnxruntime_filename="lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib"
           else
             echo "Unknown target found : ${{ matrix.artifact_name }}"
             return 1
@@ -519,10 +519,10 @@ jobs:
             git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
             cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
-            cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$ONNXRUNTIME_NAME".{dll,lib} \
+            cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
-            if [ -f ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$ONNXRUNTIME_NAME"_providers_cuda.dll ]; then
-              cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$ONNXRUNTIME_NAME"_providers_{cuda,shared}.{dll,lib} \
+            if [ -f ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
+              cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
                 ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
             fi
           else
@@ -535,7 +535,7 @@ jobs:
               -t "$(git rev-parse HEAD)"
             rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
-          if [ "$ONNXRUNTIME_NAME" = voicevox_onnxruntime ]; then
+          if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}LICENSE
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}README.md
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
@@ -620,7 +620,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.ONNXRUNTIME_NAME }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
           file: ${{ env.RELEASE_NAME }}.tgz
 
   build-xcframework:
@@ -632,36 +632,36 @@ jobs:
       - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
         id: gen-envs
         run: |
-          RELEASE_NAME=$ONNXRUNTIME_NAME-ios-xcframework-$ONNXRUNTIME_VERSION
+          RELEASE_NAME=$TARGET_LIBRARY-ios-xcframework-$ONNXRUNTIME_VERSION
           echo "release-name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=lib$ONNXRUNTIME_NAME.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
+          echo "ONNXRUNTIME_BASENAME=lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ONNXRUNTIME_NAME }}-ios-arm64
-          path: artifact/${{ env.ONNXRUNTIME_NAME }}-aarch64-apple-ios
+          name: ${{ env.TARGET_LIBRARY }}-ios-arm64
+          path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ONNXRUNTIME_NAME }}-ios-sim-arm64
-          path: artifact/${{ env.ONNXRUNTIME_NAME }}-aarch64-apple-ios-sim
+          name: ${{ env.TARGET_LIBRARY }}-ios-sim-arm64
+          path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios-sim
 
       - uses: actions/download-artifact@v4
         with:
-          name: ${{ env.ONNXRUNTIME_NAME }}-ios-sim-x86_64
-          path: artifact/${{ env.ONNXRUNTIME_NAME }}-x86_64-apple-ios
+          name: ${{ env.TARGET_LIBRARY }}-ios-sim-x86_64
+          path: artifact/${{ env.TARGET_LIBRARY }}-x86_64-apple-ios
 
       - name: Remove no version notation dylib
         run: |
-          rm -f artifact/"$ONNXRUNTIME_NAME"-x86_64-apple-ios/lib/*"$ONNXRUNTIME_NAME".dylib
-          rm -f artifact/"$ONNXRUNTIME_NAME"-aarch64-apple-ios-sim/lib/*"$ONNXRUNTIME_NAME".dylib
-          rm -f artifact/"$ONNXRUNTIME_NAME"-aarch64-apple-ios/lib/*"$ONNXRUNTIME_NAME".dylib
+          rm -f artifact/"$TARGET_LIBRARY"-x86_64-apple-ios/lib/*"$TARGET_LIBRARY".dylib
+          rm -f artifact/"$TARGET_LIBRARY"-aarch64-apple-ios-sim/lib/*"$TARGET_LIBRARY".dylib
+          rm -f artifact/"$TARGET_LIBRARY"-aarch64-apple-ios/lib/*"$TARGET_LIBRARY".dylib
 
       - name: '"onnxruntime" → "voicevox_onnxruntime"'
-        if: env.ONNXRUNTIME_NAME == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           for arch in aarch64 sim; do
             mv xcframework/Frameworks/$arch/{,voicevox_}onnxruntime.framework
@@ -673,52 +673,52 @@ jobs:
           mkdir -p "Framework-aarch64"
           cp -vr xcframework/Frameworks/aarch64/ Framework-aarch64/
 
-          lipo -create "artifact/$ONNXRUNTIME_NAME-aarch64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
-            -output "Framework-aarch64/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME"
+          lipo -create "artifact/$TARGET_LIBRARY-aarch64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
+            -output "Framework-aarch64/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
 
       - name: Change aarch64 @rpath
         run: |
-          install_name_tool -id "@rpath/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME" \
-            "Framework-aarch64/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME"
+          install_name_tool -id "@rpath/$TARGET_LIBRARY.framework/$TARGET_LIBRARY" \
+            "Framework-aarch64/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
 
       - name: Create fat binary
         run: |
-          mkdir -p "artifact/$ONNXRUNTIME_NAME-sim"
-          lipo -create "artifact/$ONNXRUNTIME_NAME-x86_64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
-            "artifact/$ONNXRUNTIME_NAME-aarch64-apple-ios-sim/lib/$ONNXRUNTIME_BASENAME" \
-            -output "artifact/$ONNXRUNTIME_NAME-sim/$ONNXRUNTIME_NAME"
+          mkdir -p "artifact/$TARGET_LIBRARY-sim"
+          lipo -create "artifact/$TARGET_LIBRARY-x86_64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
+            "artifact/$TARGET_LIBRARY-aarch64-apple-ios-sim/lib/$ONNXRUNTIME_BASENAME" \
+            -output "artifact/$TARGET_LIBRARY-sim/$TARGET_LIBRARY"
 
       - name: Create sim Framework
         run: |
           mkdir -p "Framework-sim"
           cp -vr xcframework/Frameworks/sim/ Framework-sim/
-          cp -v "artifact/$ONNXRUNTIME_NAME-sim/$ONNXRUNTIME_NAME" \
-            "Framework-sim/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME"
+          cp -v "artifact/$TARGET_LIBRARY-sim/$TARGET_LIBRARY" \
+            "Framework-sim/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
 
       - name: Change sim @rpath
         run: |
-          install_name_tool -id "@rpath/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME" \
-            "Framework-sim/$ONNXRUNTIME_NAME.framework/$ONNXRUNTIME_NAME"
+          install_name_tool -id "@rpath/$TARGET_LIBRARY.framework/$TARGET_LIBRARY" \
+            "Framework-sim/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
 
       - name: Create XCFramework
         run: |
           mkdir -p "artifact/$ONNXRUNTIME_BASENAME"
           xcodebuild -create-xcframework \
-            -framework "Framework-sim/$ONNXRUNTIME_NAME.framework" \
-            -framework "Framework-aarch64/$ONNXRUNTIME_NAME.framework" \
-            -output "artifact/$ONNXRUNTIME_BASENAME/$ONNXRUNTIME_NAME.xcframework"
+            -framework "Framework-sim/$TARGET_LIBRARY.framework" \
+            -framework "Framework-aarch64/$TARGET_LIBRARY.framework" \
+            -output "artifact/$ONNXRUNTIME_BASENAME/$TARGET_LIBRARY.xcframework"
 
       - name: Archive artifact
         run: |
           cd "artifact/$ONNXRUNTIME_BASENAME"
-          7z a "../../$RELEASE_NAME.zip" "$ONNXRUNTIME_NAME.xcframework"
+          7z a "../../$RELEASE_NAME.zip" "$TARGET_LIBRARY.xcframework"
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.ONNXRUNTIME_NAME }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
           file: ${{ env.RELEASE_NAME }}.zip
 
   build-spec-table:
@@ -758,7 +758,7 @@ jobs:
             release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_NAME-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
             release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
@@ -782,7 +782,7 @@ jobs:
                 <td>iOS</td>
                 <td>AArch64/x86_64</td>
                 <td>CPU</td>
-                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$ONNXRUNTIME_NAME-$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
+                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
               </tr>
             </tbody>
           </table>
@@ -796,4 +796,4 @@ jobs:
         with:
           body_path: release-notes.md
           prerelease: true
-          tag_name: ${{ env.ONNXRUNTIME_NAME }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag_name: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
