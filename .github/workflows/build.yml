@@ -17,6 +17,11 @@ on:
       release:
         description: "リリースするかどうか"
         type: boolean
+      code_signing:
+        description: "コード署名する"
+        type: boolean
+        required: false
+        default: false
 
 env:
   ONNXRUNTIME_NAME:
@@ -239,6 +244,7 @@ jobs:
       ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
+    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
 
     steps:
       - uses: actions/setup-python@v4
@@ -508,12 +514,12 @@ jobs:
             echo "Unknown target found : ${{ matrix.artifact_name }}"
             return 1
           fi
+          # PDBファイル, Privacy.md, include/は不要なので省く
           if [ ${{ runner.os }} = Windows ]; then
             # https://github.com/microsoft/onnxruntime/blob/v1.16.3/tools/ci_build/github/azure-pipelines/templates/c-api-artifacts-package-and-publish-steps-windows.yml#L34-L72
-            # ただし、ortクレートには.pdbとinclude/は不要なので入れない。
             mkdir -p ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib
             git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
-            cp ./{docs/Privacy.md,LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
+            cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
             cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$ONNXRUNTIME_NAME".{dll,lib} \
               ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
@@ -529,6 +535,7 @@ jobs:
               -c ${{ matrix.release_config }} \
               -s "$(pwd)" \
               -t "$(git rev-parse HEAD)"
+            rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$ONNXRUNTIME_NAME" = voicevox_onnxruntime ]; then
             for filename in LICENSE README.md; do
@@ -540,6 +547,14 @@ jobs:
             mv ./VOICEVOX_LICENSE.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/LICENSE.md
           fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
+
+      - name: Code signing (Windows)
+        if: runner.os == 'Windows' && inputs.code_signing
+        run: find ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        env:
+          ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
+          ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
+          ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
