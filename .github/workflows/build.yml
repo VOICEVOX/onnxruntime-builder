@@ -247,7 +247,7 @@ jobs:
     environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
 
     steps:
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
@@ -305,7 +305,7 @@ jobs:
 
       - name: Cache build result
         id: cache-build-result
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
@@ -637,7 +637,7 @@ jobs:
           echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
           echo "ONNXRUNTIME_BASENAME=lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v4
         with:
