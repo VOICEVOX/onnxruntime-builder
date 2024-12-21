@@ -244,7 +244,7 @@ jobs:
       ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
 
     runs-on: ${{ matrix.os }}
-    environment: ${{ inputs.code_signing && 'production' || '' }} # コード署名用のenvironment
+    environment: ${{ inputs.target == 'voicevox_onnxruntime' && 'production' || '' }} # コード署名用のenvironment
 
     steps:
       - uses: actions/setup-python@v5
@@ -303,12 +303,9 @@ jobs:
           MATRIX_CONTEXT: ${{ toJSON(matrix) }}
         run: echo "$MATRIX_CONTEXT" > matrix.json
 
-      - name: Cache build result
+      - name: Cache build result (dummy)
         id: cache-build-result
-        uses: actions/cache@v4
-        with:
-          path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
+        run: echo "cache-hit=false" >> "$GITHUB_OUTPUT"
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@main
@@ -551,12 +548,6 @@ jobs:
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifact_name }}
-          path: artifact/*
-
       - name: Generate RELEASE_NAME
         run: |
           echo RELEASE_NAME=${{ matrix.artifact_name }}-"$ONNXRUNTIME_VERSION" >> "$GITHUB_ENV"
@@ -602,198 +593,3 @@ jobs:
             --arg use_cuda "$use_cuda" \
             --arg use_dml "$use_dml" \
             > "$RELEASE_NAME.json"
-
-      - name: Upload specifications
-        uses: actions/upload-artifact@v4
-        with:
-          name: specs-${{ matrix.artifact_name }}
-          path: ${{ env.RELEASE_NAME }}.json
-
-      - name: Rearchive artifact
-        if: env.RELEASE == 'true'
-        run: |
-          mv artifact/ "$RELEASE_NAME"
-          tar cfz "$RELEASE_NAME.tgz" "$RELEASE_NAME/"
-
-      - name: Upload to Release
-        if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.tgz
-
-  build-xcframework:
-    needs: build-onnxruntime
-    runs-on: macos-13
-    outputs:
-      release-name: ${{ steps.gen-envs.outputs.release-name }}
-    steps:
-      - name: Generate RELEASE_NAME and ONNXRUNTIME_BASENAME
-        id: gen-envs
-        run: |
-          RELEASE_NAME=$TARGET_LIBRARY-ios-xcframework-$ONNXRUNTIME_VERSION
-          echo "release-name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
-          echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
-          echo "ONNXRUNTIME_BASENAME=lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
-
-      - uses: actions/checkout@v4
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.TARGET_LIBRARY }}-ios-arm64
-          path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.TARGET_LIBRARY }}-ios-sim-arm64
-          path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios-sim
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: ${{ env.TARGET_LIBRARY }}-ios-sim-x86_64
-          path: artifact/${{ env.TARGET_LIBRARY }}-x86_64-apple-ios
-
-      - name: Remove no version notation dylib
-        run: |
-          rm -f artifact/"$TARGET_LIBRARY"-x86_64-apple-ios/lib/*"$TARGET_LIBRARY".dylib
-          rm -f artifact/"$TARGET_LIBRARY"-aarch64-apple-ios-sim/lib/*"$TARGET_LIBRARY".dylib
-          rm -f artifact/"$TARGET_LIBRARY"-aarch64-apple-ios/lib/*"$TARGET_LIBRARY".dylib
-
-      - name: '"onnxruntime" → "voicevox_onnxruntime"'
-        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: |
-          for arch in aarch64 sim; do
-            mv xcframework/Frameworks/$arch/{,voicevox_}onnxruntime.framework
-          done
-          find ./xcframework -type f -exec sed -i '' s/onnxruntime/voicevox_onnxruntime/ {} +
-
-      - name: Create aarch64 Framework
-        run: |
-          mkdir -p "Framework-aarch64"
-          cp -vr xcframework/Frameworks/aarch64/ Framework-aarch64/
-
-          lipo -create "artifact/$TARGET_LIBRARY-aarch64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
-            -output "Framework-aarch64/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
-
-      - name: Change aarch64 @rpath
-        run: |
-          install_name_tool -id "@rpath/$TARGET_LIBRARY.framework/$TARGET_LIBRARY" \
-            "Framework-aarch64/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
-
-      - name: Create fat binary
-        run: |
-          mkdir -p "artifact/$TARGET_LIBRARY-sim"
-          lipo -create "artifact/$TARGET_LIBRARY-x86_64-apple-ios/lib/$ONNXRUNTIME_BASENAME" \
-            "artifact/$TARGET_LIBRARY-aarch64-apple-ios-sim/lib/$ONNXRUNTIME_BASENAME" \
-            -output "artifact/$TARGET_LIBRARY-sim/$TARGET_LIBRARY"
-
-      - name: Create sim Framework
-        run: |
-          mkdir -p "Framework-sim"
-          cp -vr xcframework/Frameworks/sim/ Framework-sim/
-          cp -v "artifact/$TARGET_LIBRARY-sim/$TARGET_LIBRARY" \
-            "Framework-sim/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
-
-      - name: Change sim @rpath
-        run: |
-          install_name_tool -id "@rpath/$TARGET_LIBRARY.framework/$TARGET_LIBRARY" \
-            "Framework-sim/$TARGET_LIBRARY.framework/$TARGET_LIBRARY"
-
-      - name: Create XCFramework
-        run: |
-          mkdir -p "artifact/$ONNXRUNTIME_BASENAME"
-          xcodebuild -create-xcframework \
-            -framework "Framework-sim/$TARGET_LIBRARY.framework" \
-            -framework "Framework-aarch64/$TARGET_LIBRARY.framework" \
-            -output "artifact/$ONNXRUNTIME_BASENAME/$TARGET_LIBRARY.xcframework"
-
-      - name: Archive artifact
-        run: |
-          cd "artifact/$ONNXRUNTIME_BASENAME"
-          7z a "../../$RELEASE_NAME.zip" "$TARGET_LIBRARY.xcframework"
-
-      - name: Upload to Release
-        if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.zip
-
-  build-spec-table:
-    needs: [build-onnxruntime, build-xcframework]
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Download specifications
-        uses: actions/download-artifact@v4
-        with:
-          path: specs
-          pattern: specs-*
-          merge-multiple: true
-
-      - name: Construct release notes
-        run: |
-          release_notes=$(
-            cat <<EOF
-          ## 動的ライブラリ
-
-          <table data-voicevox-onnxruntime-specs-format-version="1" data-voicevox-onnxruntime-specs-type="dylibs">
-            <thead>
-              <tr>
-                <th>OS</th>
-                <th>ｱｰｷﾃｸﾁｬ</th>
-                <th>デバイス</th>
-                <th>名前</th>
-              </tr>
-            </thead>
-            <tbody>
-          EOF
-          )
-          release_notes+=$'\n'
-          for specs_file in specs/*.json; do
-            specs=$(< "$specs_file")
-            release_name=$(basename "${specs_file%.json}")
-            release_notes+=$'    <tr>\n'
-            release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
-            release_notes+=$'    </tr>\n'
-          done
-          release_notes+=$(
-            cat <<EOF
-            </tbody>
-          </table>
-
-          ## XCFramework
-
-          <table data-voicevox-onnxruntime-specs-format-version="1" data-voicevox-onnxruntime-specs-type="xcframeworks">
-            <thead>
-              <tr>
-                <th>OS</th>
-                <th>ｱｰｷﾃｸﾁｬ</th>
-                <th>デバイス</th>
-                <th>名前</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>iOS</td>
-                <td>AArch64/x86_64</td>
-                <td>CPU</td>
-                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
-              </tr>
-            </tbody>
-          </table>
-          EOF
-          )
-          tee release-notes.md >&2 <<< "$release_notes"
-
-      - name: Update release notes
-        if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release-notes.md
-          prerelease: true
-          tag_name: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
