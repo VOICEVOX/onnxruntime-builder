@@ -261,6 +261,12 @@ jobs:
             exit 1
           fi
 
+      - name: Force LF
+        run: |
+          # https://github.com/actions/checkout/issues/135
+          git config --system core.autocrlf false
+          git config --system core.eol lf
+
       - name: Checkout
         uses: actions/checkout@v4
         if: env.TARGET_LIBRARY == 'onnxruntime'
