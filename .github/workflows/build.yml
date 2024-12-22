@@ -263,9 +263,9 @@ jobs:
 
       - name: Force LF
         run: |
-          # https://github.com/actions/checkout/issues/135
-          git config --system core.autocrlf false
-          git config --system core.eol lf
+          # これをしないと、Windows環境でのビルドで改行不一致が発生して落ちる。
+          git config --global core.autocrlf false
+          git config --global core.eol lf
 
       - name: Checkout
         uses: actions/checkout@v4
