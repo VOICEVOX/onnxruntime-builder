@@ -297,6 +297,7 @@ jobs:
       - name: Apply patch
         run: |
           git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
+          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_20_1_include_onnx_6314.patch
 
       - name: Dump matrix context
         env:
