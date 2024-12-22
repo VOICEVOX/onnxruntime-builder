@@ -5,7 +5,7 @@ index 4ca96834c6..05a7efb10b 100644
 @@ -1027,3 +1027,65 @@ index 75280f6c..5543fda0 100644
           N, C = 3, 4
           graph = self._make_graph(
-
+ 
 +--- a/onnx/defs/tensor/old.cc
 ++++ b/onnx/defs/tensor/old.cc
 +@@ -2757,7 +2757,6 @@ ONNX_OPERATOR_SET_SCHEMA(
