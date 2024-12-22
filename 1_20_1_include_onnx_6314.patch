@@ -1,5 +1,5 @@
 diff --git a/cmake/patches/onnx/onnx.patch b/cmake/patches/onnx/onnx.patch
-index 4ca96834c6..05a7efb10b 100644
+index 4ca96834c6..5f098ab9a9 100644
 --- a/cmake/patches/onnx/onnx.patch
 +++ b/cmake/patches/onnx/onnx.patch
 @@ -1027,3 +1027,65 @@ index 75280f6c..5543fda0 100644
@@ -69,7 +69,7 @@ index 4ca96834c6..05a7efb10b 100644
 +         graph = self._make_graph(
 +             [("x", TensorProto.FLOAT, (3, 2)), ("axes", TensorProto.INT64, (4,))],
 diff --git a/js/web/package.json b/js/web/package.json
-index 181d6127f5..ac175b31de 100644
+index d5dba18c14..c82ad024c3 100644
 --- a/js/web/package.json
 +++ b/js/web/package.json
 @@ -13,7 +13,7 @@
