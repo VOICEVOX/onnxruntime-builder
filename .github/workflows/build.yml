@@ -29,7 +29,7 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ inputs.version || '1.17.3' }}
+    ${{ inputs.version || '1.20.1' }}
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
@@ -296,7 +296,7 @@ jobs:
 
       - name: Apply patch
         run: |
-          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
+          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_20_1_android_arm64_build.patch
           git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_20_1_include_onnx_6314.patch
 
       - name: Dump matrix context
