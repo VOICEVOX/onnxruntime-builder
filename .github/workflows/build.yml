@@ -472,7 +472,7 @@ jobs:
         if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
-            gpg -ef ./builder/build-log-pk.asc "$file"
+            gpg -ef ./builder/build-log-pub.asc "$file"
           done
 
       - name: Upload the encrypted build log
