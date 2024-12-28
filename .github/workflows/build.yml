@@ -468,18 +468,19 @@ jobs:
             1>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&1' || format('{0}_stdout.txt', matrix.artifact_name) }} \
             2>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&2' || format('{0}_stderr.txt', matrix.artifact_name) }}
 
-      - name: Send build log to Discord
+      - name: Encrypt the build log
         if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
-          curl \
-            "$PRODUCTION_DISCORD_WEBHOOK" \
-            -sf \
-            -F 'payload_json={"username":"onnxruntime-builder"}' \
-            -F file1=@${{ matrix.artifact_name }}_stdout.txt \
-            -F file2=@${{ matrix.artifact_name }}_stderr.txt \
-            > /dev/null 2>&1
-        env:
-          PRODUCTION_DISCORD_WEBHOOK: ${{ secrets.PRODUCTION_DISCORD_WEBHOOK }}
+          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
+            gpg -ef ./builder/build-log-pub.asc "$file"
+          done
+
+      - name: Upload the encrypted build log
+        if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        uses: actions/upload-artifact@v4
+        with:
+          name: buildlog_${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}_*.txt.gpg
 
       - name: Inspect the build directory for debug
 
