@@ -82,17 +82,18 @@ jobs:
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
-          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
-            os: windows-2022
-            build_opts: |-
-              --compile_no_warning_as_error
-              --x86
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
-              Rust_CARGO_TARGET=i686-pc-windows-msvc
-            result_dir: build/Release
-            release_config: Release
+          # https://github.com/VOICEVOX/onnxruntime-builder/issues/59
+          #- artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
+          #  os: windows-2022
+          #  build_opts: |-
+          #    --compile_no_warning_as_error
+          #    --x86
+          #    --cmake_extra_defines
+          #    CMAKE_SYSTEM_NAME=Windows
+          #    CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
+          #    Rust_CARGO_TARGET=i686-pc-windows-msvc
+          #  result_dir: build/Release
+          #  release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
             os: ubuntu-20.04
             build_opts: |-
