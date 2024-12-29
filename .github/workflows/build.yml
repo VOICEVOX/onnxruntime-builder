@@ -24,14 +24,12 @@ on:
         default: false
 
 env:
-  TARGET_LIBRARY:
-    |-
+  TARGET_LIBRARY: |-
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
     ${{ inputs.version || '1.20.1' }}
-  RELEASE:
-    |- # workflow_dispatchでのreleaseフラグがあればリリースする
+  RELEASE: |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
 
 defaults:
