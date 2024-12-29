@@ -51,7 +51,7 @@ jobs:
               --compile_no_warning_as_error
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
@@ -62,7 +62,7 @@ jobs:
               --use_dml
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
@@ -78,7 +78,7 @@ jobs:
               --cuda_version 12.4 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
@@ -90,7 +90,7 @@ jobs:
           #    --x86
           #    --cmake_extra_defines
           #    CMAKE_SYSTEM_NAME=Windows
-          #    CMAKE_SYSTEM_PROCESSOR=x86
+          #    CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
           #    Rust_CARGO_TARGET=i686-pc-windows-msvc
           #  result_dir: build/Release
           #  release_config: Release
@@ -100,7 +100,7 @@ jobs:
               --compile_no_warning_as_error
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
@@ -114,7 +114,7 @@ jobs:
               --use_cuda
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
@@ -129,7 +129,7 @@ jobs:
               --arm
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=armv7l
+              CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
               Rust_CARGO_TARGET=armv7-unknown-linux-gnueabihf
             result_dir: build
             release_config: Release
@@ -144,7 +144,7 @@ jobs:
               --arm64
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=aarch64
+              CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
               Rust_CARGO_TARGET=aarch64-unknown-linux-gnu
             result_dir: build
             release_config: Release
@@ -155,6 +155,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=arm64
+              CMAKE_SYSTEM_PROCESSOR=arm64 # required for `cpuinfo`
               Rust_CARGO_TARGET=aarch64-apple-darwin
             result_dir: build
             release_config: Release
@@ -165,6 +166,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-apple-darwin
             result_dir: build
             release_config: Release
@@ -176,7 +178,7 @@ jobs:
               --android_abi x86_64
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
-              CMAKE_SYSTEM_PROCESSOR=x86_64
+              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
               Rust_CARGO_TARGET=x86_64-linux-android
             result_dir: build
             release_config: Release
@@ -188,7 +190,7 @@ jobs:
               --android_abi arm64-v8a
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
-              CMAKE_SYSTEM_PROCESSOR=aarch64
+              CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
               Rust_CARGO_TARGET=aarch64-linux-android
             result_dir: build
             release_config: Release
