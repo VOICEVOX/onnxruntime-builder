@@ -308,6 +308,7 @@ jobs:
 
       - name: Cache build result
         id: cache-build-result
+        if: env.TARGET_LIBRARY == 'onnxruntime'
         uses: actions/cache@v4
         with:
           path: build/
