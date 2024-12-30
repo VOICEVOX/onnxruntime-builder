@@ -347,6 +347,11 @@ jobs:
           # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2004-Readme.md#environment-variables-2
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
 
+      # workaround for https://github.com/actions/checkout/issues/1201
+      - name: Stash build directory
+        if: steps.cache-build-result.outputs.cache-hit == 'true'
+        run: mv ./build "$RUNNER_TEMP/"
+
       - name: Checkout
         uses: actions/checkout@v4
         if: env.TARGET_LIBRARY == 'onnxruntime'
@@ -354,6 +359,10 @@ jobs:
           repository: microsoft/onnxruntime
           submodules: true
           ref: v${{ env.ONNXRUNTIME_VERSION }}
+
+      - name: Restore the stashed build directory
+        if: steps.cache-build-result.outputs.cache-hit == 'true'
+        run: mv "$RUNNER_TEMP/build" .
 
       - name: Checkout
         uses: actions/checkout@v4
