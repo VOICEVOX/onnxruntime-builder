@@ -52,7 +52,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
@@ -63,7 +62,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
@@ -79,7 +77,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-pc-windows-msvc
             result_dir: build/Release
             release_config: Release
           # https://github.com/VOICEVOX/onnxruntime-builder/issues/59
@@ -91,7 +88,6 @@ jobs:
           #    --cmake_extra_defines
           #    CMAKE_SYSTEM_NAME=Windows
           #    CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
-          #    Rust_CARGO_TARGET=i686-pc-windows-msvc
           #  result_dir: build/Release
           #  release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
@@ -101,7 +97,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
@@ -115,7 +110,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-unknown-linux-gnu
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
@@ -130,7 +124,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
-              Rust_CARGO_TARGET=armv7-unknown-linux-gnueabihf
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
@@ -145,7 +138,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=aarch64-unknown-linux-gnu
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
@@ -156,7 +148,6 @@ jobs:
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=arm64
               CMAKE_SYSTEM_PROCESSOR=arm64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=aarch64-apple-darwin
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
@@ -167,7 +158,6 @@ jobs:
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=x86_64
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-apple-darwin
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
@@ -179,7 +169,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=x86_64-linux-android
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
@@ -191,7 +180,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
               CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-              Rust_CARGO_TARGET=aarch64-linux-android
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
@@ -205,8 +193,6 @@ jobs:
               --osx_arch arm64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-              --cmake_extra_defines
-              Rust_CARGO_TARGET=aarch64-apple-ios
             result_dir: build/Release
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
@@ -220,8 +206,6 @@ jobs:
               --osx_arch arm64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-              --cmake_extra_defines
-              Rust_CARGO_TARGET=aarch64-apple-ios-sim
             result_dir: build/Release
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
@@ -235,8 +219,6 @@ jobs:
               --osx_arch x86_64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-              --cmake_extra_defines
-              Rust_CARGO_TARGET=x86_64-apple-ios
             result_dir: build/Release
             release_config: Release-iphonesimulator
 
@@ -394,33 +376,24 @@ jobs:
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
-      - name: Extract Rust toolchain and target triple
-        id: rust-toolchain-and-target-triple
+      - name: Run prepare.bash
+        id: prepare
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: |
-          build_opts=(
-          ${{ matrix.build_opts }}
-          )
-          echo "toolchain=$(cat ./rust-toolchain)" >> "$GITHUB_OUTPUT"
-          echo "target=$(sed -E 's/.*Rust_CARGO_TARGET=([a-z0-9_-]+).*/\1/' <<< "${build_opts[*]}")" >> "$GITHUB_OUTPUT"
+        run: ./prepare.bash 1>${{ matrix.artifact_name }}_stdout.txt 2>${{ matrix.artifact_name }}_stderr.txt
 
-      - name: Set up Rust
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: dtolnay/rust-toolchain@master
+      - name: Encrypt the preparation log
+        if: failure() && steps.prepare.outcome == 'failure'
+        run: |
+          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
+            gpg -ef ./builder/build-log-pub.asc "$file"
+          done
+
+      - name: Upload the encrypted preparation log
+        if: failure() && steps.prepare.outcome == 'failure'
+        uses: actions/upload-artifact@v4
         with:
-          toolchain: ${{ steps.rust-toolchain-and-target-triple.outputs.toolchain }}
-          targets: ${{ steps.rust-toolchain-and-target-triple.outputs.target }}
-
-      - name: Install cargo-binstall
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: taiki-e/install-action@cargo-binstall
-
-      - name: Install cxxbridge-cmd
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: |
-          md=$(cargo metadata --manifest-path ./vv_bin/Cargo.toml --format-version 1)
-          version=$(jq -r '.packages[] | select(.name == "cxx").version' <<< "$md")
-          cargo binstall "cxxbridge-cmd@$version" --no-confirm --log-level debug
+          name: preparation_${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}_*.txt.gpg
 
       - name: Configure build environment for non-x86_64 Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
