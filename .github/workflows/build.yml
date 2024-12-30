@@ -397,7 +397,7 @@ jobs:
 
       - name: Extract Rust toolchain and target triple
         id: rust-toolchain-and-target-triple
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           build_opts=(
           ${{ matrix.build_opts }}
@@ -406,18 +406,18 @@ jobs:
           echo "target=$(sed -E 's/.*Rust_CARGO_TARGET=([a-z0-9_-]+).*/\1/' <<< "${build_opts[*]}")" >> "$GITHUB_OUTPUT"
 
       - name: Set up Rust
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ steps.rust-toolchain-and-target-triple.outputs.toolchain }}
           targets: ${{ steps.rust-toolchain-and-target-triple.outputs.target }}
 
       - name: Install cargo-binstall
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         uses: taiki-e/install-action@cargo-binstall
 
       - name: Install cxxbridge-cmd
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
           md=$(cargo metadata --manifest-path ./vv_bin/Cargo.toml --format-version 1)
           version=$(jq -r '.packages[] | select(.name == "cxx").version' <<< "$md")
