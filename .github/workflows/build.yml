@@ -290,6 +290,7 @@ jobs:
 
       - name: Cache build result
         id: cache-build-result
+        if: env.TARGET_LIBRARY == 'onnxruntime'
         uses: actions/cache@v4
         with:
           path: build/
@@ -378,7 +379,7 @@ jobs:
 
       - name: Run prepare.bash
         id: prepare
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: ./prepare.bash 1>${{ matrix.artifact_name }}_stdout.txt 2>${{ matrix.artifact_name }}_stderr.txt
 
       - name: Encrypt the preparation log
