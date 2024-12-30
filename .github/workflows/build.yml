@@ -319,19 +319,20 @@ jobs:
       - name: Set up cuDNN
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
         run: |
-          mkdir download
+          download_dir=$RUNNER_TEMP/cudnn
+          mkdir "$download_dir"
 
           if [ ${{ runner.os }} = Windows ]; then
-            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.zip
-            unzip download/cudnn.zip -d download
-            rm download/cudnn.zip
+            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
+            unzip "$download_dir/cudnn.zip" -d "$download_dir"
+            rm "$download_dir/cudnn.zip"
           else
-            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.tar.gz
-            tar xvf download/cudnn.tar.gz -C download/
-            rm download/cudnn.tar.gz
+            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
+            tar xvf "$download_dir/cudnn.tar.gz" -C "$download_dir/"
+            rm "$download_dir/cudnn.tar.gz"
           fi
 
-          cudnn_path=$(find download -maxdepth 1 -name 'cudnn-*')
+          cudnn_path=$(find "$download_dir" -maxdepth 1 -name 'cudnn-*')
           if [ ${{ runner.os }} = Windows ]; then
             cudnn_path=$(cygpath -wa "$cudnn_path")
           else
@@ -339,24 +340,6 @@ jobs:
           fi
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
-
-      - name: Configure build environment for non-x86_64 Linux
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
-        run: |
-          # Required for arm build
-          # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
-          echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
-          echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
-
-          # Prevent Exec Format Error during cross-compiling
-          if ${{ matrix.symlink_workaround }}; then
-            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.linux_cross_arch }}/ ';'
-            sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
-          fi
-
-          # Set environment variable CC / CXX
-          echo CC="$ARCH_PREFIX"gcc-${{ matrix.cc_version }} >> "$GITHUB_ENV"
-          echo CXX="$ARCH_PREFIX"g++-${{ matrix.cxx_version }} >> "$GITHUB_ENV"
 
       - name: Configure to use latest Android NDK
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
@@ -401,6 +384,24 @@ jobs:
       - name: Apply patch
         run: |
           git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
+
+      - name: Configure build environment for non-x86_64 Linux
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
+        run: |
+          # Required for arm build
+          # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
+          echo 'string(APPEND CMAKE_C_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+          echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
+
+          # Prevent Exec Format Error during cross-compiling
+          if ${{ matrix.symlink_workaround }}; then
+            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.linux_cross_arch }}/ ';'
+            sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
+          fi
+
+          # Set environment variable CC / CXX
+          echo CC="$ARCH_PREFIX"gcc-${{ matrix.cc_version }} >> "$GITHUB_ENV"
+          echo CXX="$ARCH_PREFIX"g++-${{ matrix.cxx_version }} >> "$GITHUB_ENV"
 
       - name: Run prepare.bash
         id: prepare
