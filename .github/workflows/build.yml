@@ -616,6 +616,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
           file: ${{ env.RELEASE_NAME }}.tgz
+          prerelease: true
 
   build-xcframework:
     needs: build-onnxruntime
@@ -714,6 +715,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
           file: ${{ env.RELEASE_NAME }}.zip
+          prerelease: true
 
   build-spec-table:
     needs: [build-onnxruntime, build-xcframework]
