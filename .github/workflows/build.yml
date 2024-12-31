@@ -246,43 +246,6 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout
-        uses: actions/checkout@v4
-        if: env.TARGET_LIBRARY == 'onnxruntime'
-        with:
-          repository: microsoft/onnxruntime
-          submodules: true
-          ref: v${{ env.ONNXRUNTIME_VERSION }}
-
-      - name: Checkout
-        uses: actions/checkout@v4
-        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        with:
-          repository: microsoft/onnxruntime
-          submodules: true
-          ref: v${{ env.ONNXRUNTIME_VERSION }}
-          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
-
-      - name: Switch to production
-        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: |
-          (
-            git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
-            git switch -d FETCH_HEAD
-          ) > /dev/null 2>&1
-        env:
-          PRODUCTION_REPOSITORY_URL: ${{ secrets.PRODUCTION_REPOSITORY_URL }}
-
-      - name: Checkout builder
-        uses: actions/checkout@v4
-        with:
-          path: builder
-
-      - name: Apply patch
-        run: |
-          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
-
       - name: Dump matrix context
         env:
           MATRIX_CONTEXT: ${{ toJSON(matrix) }}
@@ -356,19 +319,20 @@ jobs:
       - name: Set up cuDNN
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
         run: |
-          mkdir download
+          download_dir=$RUNNER_TEMP/cudnn
+          mkdir "$download_dir"
 
           if [ ${{ runner.os }} = Windows ]; then
-            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.zip
-            unzip download/cudnn.zip -d download
-            rm download/cudnn.zip
+            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
+            unzip "$download_dir/cudnn.zip" -d "$download_dir"
+            rm "$download_dir/cudnn.zip"
           else
-            curl -L "${{ matrix.cudnn_url }}" > download/cudnn.tar.gz
-            tar xvf download/cudnn.tar.gz -C download/
-            rm download/cudnn.tar.gz
+            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
+            tar xvf "$download_dir/cudnn.tar.gz" -C "$download_dir/"
+            rm "$download_dir/cudnn.tar.gz"
           fi
 
-          cudnn_path=$(find download -maxdepth 1 -name 'cudnn-*')
+          cudnn_path=$(find "$download_dir" -maxdepth 1 -name 'cudnn-*')
           if [ ${{ runner.os }} = Windows ]; then
             cudnn_path=$(cygpath -wa "$cudnn_path")
           else
@@ -377,24 +341,58 @@ jobs:
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
-      - name: Run prepare.bash
-        id: prepare
-        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: ./prepare.bash 1>${{ matrix.artifact_name }}_stdout.txt 2>${{ matrix.artifact_name }}_stderr.txt
-
-      - name: Encrypt the preparation log
-        if: failure() && steps.prepare.outcome == 'failure'
+      - name: Configure to use latest Android NDK
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
         run: |
-          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
-            gpg -ef ./builder/build-log-pub.asc "$file"
-          done
+          # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2004-Readme.md#environment-variables-2
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
 
-      - name: Upload the encrypted preparation log
-        if: failure() && steps.prepare.outcome == 'failure'
-        uses: actions/upload-artifact@v4
+      # workaround for https://github.com/actions/checkout/issues/1201
+      - name: Stash build directory
+        if: steps.cache-build-result.outputs.cache-hit == 'true'
+        run: mv ./build "$RUNNER_TEMP/"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: env.TARGET_LIBRARY == 'onnxruntime'
         with:
-          name: preparation_${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}_*.txt.gpg
+          repository: microsoft/onnxruntime
+          submodules: true
+          ref: v${{ env.ONNXRUNTIME_VERSION }}
+
+      - name: Restore the stashed build directory
+        if: steps.cache-build-result.outputs.cache-hit == 'true'
+        run: mv "$RUNNER_TEMP/build" .
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        with:
+          repository: microsoft/onnxruntime
+          submodules: true
+          ref: v${{ env.ONNXRUNTIME_VERSION }}
+          token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
+
+      - name: Switch to production
+        id: switch-to-production
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        run: |
+          (
+            git remote add private "$PRODUCTION_REPOSITORY_URL"
+            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git switch -d FETCH_HEAD
+          ) 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
+        env:
+          PRODUCTION_REPOSITORY_URL: ${{ secrets.PRODUCTION_REPOSITORY_URL }}
+
+      - name: Checkout builder
+        uses: actions/checkout@v4
+        with:
+          path: builder
+
+      - name: Apply patch
+        run: |
+          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
 
       - name: Configure build environment for non-x86_64 Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
@@ -414,11 +412,10 @@ jobs:
           echo CC="$ARCH_PREFIX"gcc-${{ matrix.cc_version }} >> "$GITHUB_ENV"
           echo CXX="$ARCH_PREFIX"g++-${{ matrix.cxx_version }} >> "$GITHUB_ENV"
 
-      - name: Configure to use latest Android NDK
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
-        run: |
-          # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2004-Readme.md#environment-variables-2
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - name: Run prepare.bash
+        id: prepare
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        run: ./prepare.bash 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
 
       - name: Build ONNX Runtime
         id: build
@@ -442,25 +439,11 @@ jobs:
             --parallel \
             --build_shared_lib \
             "${build_opts[@]}" \
-            1>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&1' || format('{0}_stdout.txt', matrix.artifact_name) }} \
-            2>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&2' || format('{0}_stderr.txt', matrix.artifact_name) }}
-
-      - name: Encrypt the build log
-        if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: |
-          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
-            gpg -ef ./builder/build-log-pub.asc "$file"
-          done
-
-      - name: Upload the encrypted build log
-        if: failure() && steps.build.outcome == 'failure' && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: actions/upload-artifact@v4
-        with:
-          name: buildlog_${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}_*.txt.gpg
+            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
+            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
 
       - name: Inspect the build directory for debug
-
+        id: inspect-build-dir
         if: steps.cache-build-result.outputs.cache-hit != 'true'
         run: |
           if [ ${{ runner.os }} = Windows ]; then
@@ -468,7 +451,39 @@ jobs:
               msys2.cmd -c "tree $1"
             }
           fi
-          tree build
+          tree build \
+            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
+            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+
+      - name: Encrypt log
+        if: |
+          failure()
+          && (
+            steps.switch-to-production.outcome == 'failure'
+            || steps.prepare.outcome == 'failure'
+            || steps.build.outcome == 'failure'
+            || steps.inspect-build-dir.outcome == 'failure'
+          )
+          && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        run: |
+          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
+            gpg -ef ./builder/log-encryption-pub.asc "$file"
+          done
+
+      - name: Upload the encrypted log
+        if: |
+          failure()
+          && (
+            steps.switch-to-production.outcome == 'failure'
+            || steps.prepare.outcome == 'failure'
+            || steps.build.outcome == 'failure'
+            || steps.inspect-build-dir.outcome == 'failure'
+          )
+          && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        uses: actions/upload-artifact@v4
+        with:
+          name: log_${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}_*.txt.gpg
 
       - name: Organize artifact
         run: |
