@@ -449,7 +449,7 @@ jobs:
 
           if [ ${{ runner.os }} != Windows ]; then
             cd ./build/Release
-            make install DESTDIR=./build/installed \
+            make install DESTDIR=. \
               1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
               2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
           fi
