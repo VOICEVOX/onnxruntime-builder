@@ -245,6 +245,12 @@ jobs:
             exit 1
           fi
 
+      - name: Force LF
+        run: |
+          # これをしないと、Windows環境でのビルドで改行不一致が発生して落ちる。
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+
       - name: Dump matrix context
         env:
           MATRIX_CONTEXT: ${{ toJSON(matrix) }}
