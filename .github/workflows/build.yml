@@ -533,7 +533,7 @@ jobs:
             fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
-              -r ${{ matrix.result_dir }} \
+              -r $(pwd)/${{ matrix.result_dir }} \
               -a ${{ matrix.artifact_name }} \
               -l "$onnxruntime_filename" \
               -c ${{ matrix.release_config }} \
