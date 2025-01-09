@@ -452,6 +452,9 @@ jobs:
             make install DESTDIR=../installed \
               1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
               2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+          fi
+          if [ ${{ runner.os }} = Linux ]
+            # Linuxではcopy_strip_binaryがlib64を参照するがmake installではlibしか生成されないのでmvする。
             mv ../installed/usr/local/lib ../installed/usr/local/lib64
           fi
 
