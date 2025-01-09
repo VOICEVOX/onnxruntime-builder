@@ -452,7 +452,7 @@ jobs:
             make install DESTDIR=../installed \
               1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
               2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
-            mv ../installed/lib ../installed/lib64
+            mv ../installed/usr/local/lib ../installed/usr/local/lib64
           fi
 
       - name: Inspect the build directory for debug
