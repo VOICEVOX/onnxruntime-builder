@@ -52,7 +52,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
             os: windows-2022
@@ -62,7 +61,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
             os: windows-2022
@@ -77,7 +75,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
@@ -87,7 +84,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
-            result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
             os: ubuntu-20.04
@@ -96,7 +92,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
             os: ubuntu-20.04
@@ -109,7 +104,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-20.04
@@ -123,7 +117,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-20.04
@@ -137,7 +130,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
             os: macos-13
@@ -147,7 +139,6 @@ jobs:
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=arm64
               CMAKE_SYSTEM_PROCESSOR=arm64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
             os: macos-13
@@ -157,7 +148,6 @@ jobs:
               CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=x86_64
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
             os: ubuntu-20.04
@@ -168,7 +158,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
             os: ubuntu-20.04
@@ -179,7 +168,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Android
               CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
             os: macos-13
@@ -192,7 +180,6 @@ jobs:
               --osx_arch arm64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
             os: macos-13
@@ -205,7 +192,6 @@ jobs:
               --osx_arch arm64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
             os: macos-13
@@ -218,7 +204,6 @@ jobs:
               --osx_arch x86_64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
             release_config: Release-iphonesimulator
 
     env:
@@ -505,7 +490,7 @@ jobs:
           fi
 
           # コピー先artifactを予め削除しておく
-          rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
+          rm -rf build/${{ matrix.artifact_name }}
           rm -rf ./artifact
           # Set library name
           ARTIFACT_NAME=${{ matrix.artifact_name }}
@@ -525,38 +510,38 @@ jobs:
           # PDBファイル, Privacy.md, include/は不要なので省く
           if [ ${{ runner.os }} = Windows ]; then
             # https://github.com/microsoft/onnxruntime/blob/v1.16.3/tools/ci_build/github/azure-pipelines/templates/c-api-artifacts-package-and-publish-steps-windows.yml#L34-L72
-            mkdir -p ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib
-            git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
+            mkdir -p ./buuld/${{ matrix.artifact_name }}/lib
+            git rev-parse HEAD > ./build/${{ matrix.artifact_name }}/GIT_COMMIT_ID
             cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
-              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
-            cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
-              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
-            if [ -f ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
-              cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
-                ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
+              ./build/${{ matrix.artifact_name }}/
+            cp ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
+              ./build/${{ matrix.artifact_name }}/lib/
+            if [ -f ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
+              cp ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
+                ./build/${{ matrix.artifact_name }}/lib/
             fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
-              -r $(pwd)/${{ matrix.result_dir }} \
+              -r $(pwd)/build \
               -a ${{ matrix.artifact_name }} \
               -l "$onnxruntime_filename" \
               -c ${{ matrix.release_config }} \
               -s "$(pwd)" \
               -t "$(git rev-parse HEAD)"
-            rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{Privacy.md,include}
+            rm -r build/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}LICENSE
-            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}README.md
-            mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
-            mv ./VOICEVOX_LICENSE.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/LICENSE.md
-            mv ./build/third-party-notices.html ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}
+            mv build/${{ matrix.artifact_name }}/{,ORT_}LICENSE
+            mv build/${{ matrix.artifact_name }}/{,ORT_}README.md
+            mv build/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
+            mv ./VOICEVOX_LICENSE.md build/${{ matrix.artifact_name }}/LICENSE.md
+            mv ./build/third-party-notices.html ./build/${{ matrix.artifact_name }}
           fi
-          mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
+          mv build/${{ matrix.artifact_name }} ./artifact/
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
-        run: find ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        run: find ./build/${{ matrix.artifact_name }}/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
