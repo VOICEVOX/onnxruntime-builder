@@ -447,17 +447,6 @@ jobs:
             1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
             2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
 
-          if [ ${{ runner.os }} != Windows ]; then
-            cd ./build/Release
-            make install DESTDIR=../installed \
-              1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
-              2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
-          fi
-          if [ ${{ runner.os }} = Linux ]
-            # Linuxではcopy_strip_binaryがlib64を参照するがmake installではlibしか生成されないのでmvする。
-            mv ../installed/usr/local/lib ../installed/usr/local/lib64
-          fi
-
       - name: Inspect the build directory for debug
         id: inspect-build-dir
         if: steps.cache-build-result.outputs.cache-hit != 'true'
@@ -503,6 +492,18 @@ jobs:
 
       - name: Organize artifact
         run: |
+          if [ ${{ runner.os }} != Windows ]; then
+            cd ./build/Release
+            make install DESTDIR=../installed \
+              1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
+              2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+          fi
+          if [ ${{ runner.os }} = Linux ]
+            # Linuxではcopy_strip_binaryがlib64を参照するがmake installではlibしか生成されないのでmvする。
+            # TODO: 本来はちゃんとlib64を生成するようにすべき（要調査）
+            mv ../installed/usr/local/lib ../installed/usr/local/lib64
+          fi
+
           # コピー先artifactを予め削除しておく
           rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           rm -rf ./artifact
