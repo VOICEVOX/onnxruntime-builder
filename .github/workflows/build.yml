@@ -68,7 +68,7 @@ jobs:
             os: windows-2022
             cuda_version: 12.4.1
             # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
-            cuda_sub_packages: '["cudart", "cuobjdump", "nvrtc", "nvcc", "nvdisasm", "thrust", "cublas_dev", "cufft_dev", "curand_dev", "cusolver_dev", "cusparse_dev", "visual_studio_integration"]'
+            cuda_sub_packages: '["cudart", "cuobjdump", "nvrtc", "nvrtc_dev", "nvcc", "nvdisasm", "thrust", "cublas_dev", "cufft_dev", "curand_dev", "cusolver_dev", "cusparse_dev", "visual_studio_integration"]'
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip
             build_opts: |-
               --compile_no_warning_as_error
