@@ -498,7 +498,7 @@ jobs:
               1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
               2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
           fi
-          if [ ${{ runner.os }} = Linux ]
+          if [ ${{ runner.os }} = Linux ]; then
             # Linuxではcopy_strip_binaryがlib64を参照するがmake installではlibしか生成されないのでmvする。
             # TODO: 本来はちゃんとlib64を生成するようにすべき（要調査）
             mv ../installed/usr/local/lib ../installed/usr/local/lib64
