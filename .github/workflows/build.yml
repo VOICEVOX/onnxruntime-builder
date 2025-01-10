@@ -514,10 +514,10 @@ jobs:
             git rev-parse HEAD > ./build/${{ matrix.artifact_name }}/GIT_COMMIT_ID
             cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
               ./build/${{ matrix.artifact_name }}/
-            cp ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
+            cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
               ./build/${{ matrix.artifact_name }}/lib/
-            if [ -f ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
-              cp ./build/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
+            if [ -f ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
+              cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
                 ./build/${{ matrix.artifact_name }}/lib/
             fi
           else
