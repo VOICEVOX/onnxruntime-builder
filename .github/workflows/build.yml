@@ -598,6 +598,7 @@ jobs:
 
               --use_cuda) use_cuda=1 ;;
               --use_dml) use_dml=1 ;;
+              --use_coreml) use_coreml=1 ;;
             esac
           done
 
@@ -609,6 +610,7 @@ jobs:
               "devices": [
                 ("CUDA" | select($use_cuda == "1")),
                 ("DirectML" | select($use_dml == "1")),
+                ("CoreML" | select($use_coreml == "1")),
                 "CPU"
               ] | join("/")
             }' \
