@@ -619,7 +619,7 @@ jobs:
             --arg arch "$arch" \
             --arg use_cuda "$use_cuda" \
             --arg use_dml "$use_dml" \
-            --arg use_coreml "$use_coreml"
+            --arg use_coreml "$use_coreml" \
             > "$RELEASE_NAME.json"
 
       - name: Upload specifications
