@@ -531,7 +531,7 @@ jobs:
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}LICENSE
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,ORT_}README.md
             mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
-            mv ./VOICEVOX_LICENSE.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/LICENSE.md
+            mv ./VOICEVOX_ORT_TERMS.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
             mv ./build/third-party-notices.html ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
