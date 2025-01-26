@@ -1,7 +1,6 @@
 name: Build C++ Shared Library
 
 on:
-  push:
   workflow_dispatch:
     inputs:
       version:
@@ -378,7 +377,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "refs/tags/tmp"
             git switch -d FETCH_HEAD
           ) 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
         env:
@@ -611,7 +610,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag: ${{ env.TARGET_LIBRARY }}-1.17.3-preview.0
           file: ${{ env.RELEASE_NAME }}.tgz
           prerelease: true
 
@@ -710,7 +709,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag: ${{ env.TARGET_LIBRARY }}-1.17.3-preview.0
           file: ${{ env.RELEASE_NAME }}.zip
           prerelease: true
 
@@ -734,7 +733,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "refs/tags/tmp"
             git switch -d FETCH_HEAD
           ) 1>>/dev/null 2>>/dev/null
         env:
@@ -790,7 +789,7 @@ jobs:
             release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-1.17.3-preview.0/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
             release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
@@ -834,4 +833,4 @@ jobs:
         with:
           body_path: release-notes.md
           prerelease: true
-          tag_name: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+          tag_name: ${{ env.TARGET_LIBRARY }}-1.17.3-preview.0
