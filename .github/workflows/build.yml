@@ -391,7 +391,7 @@ jobs:
 
       - name: Apply patch
         run: |
-          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_android_arm64_build.patch
+          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_*.patch
 
       - name: Configure build environment for non-x86_64 Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
