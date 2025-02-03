@@ -1,19 +1,12 @@
-diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/github/linux/copy_strip_binary.sh
-index bcf6d81378..fab8da5e37 100755
 --- a/tools/ci_build/github/linux/copy_strip_binary.sh
 +++ b/tools/ci_build/github/linux/copy_strip_binary.sh
-@@ -35,8 +35,6 @@ fi
+@@ -35,5 +35,4 @@ fi
  echo "Copy debug symbols in a separate file and strip the original binary."
  if [[ $LIB_NAME == *.dylib ]]
  then
 -    dsymutil $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME -o $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME.dSYM
--    strip -S $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME
-     ln -s $LIB_NAME $BINARY_DIR/$ARTIFACT_NAME/lib/libvoicevox_onnxruntime.dylib
-     # copy the CoreML EP header for macOS build (libs with .dylib ext)
-     cp $SOURCE_DIR/include/onnxruntime/core/providers/coreml/coreml_provider_factory.h  $BINARY_DIR/$ARTIFACT_NAME/include
-@@ -44,6 +42,7 @@ elif [[ $LIB_NAME == *.so.* ]]
- then
-     ln -s $LIB_NAME $BINARY_DIR/$ARTIFACT_NAME/lib/libvoicevox_onnxruntime.so
+     strip -S $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME
+@@ -46,4 +44,5 @@ elif [[ $LIB_NAME == *.so.* ]]
  fi
 +strip -s $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME
  cp $SOURCE_DIR/include/onnxruntime/core/session/onnxruntime_*.h $BINARY_DIR/$ARTIFACT_NAME/include
