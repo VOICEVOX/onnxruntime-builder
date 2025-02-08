@@ -529,7 +529,7 @@ jobs:
           fi
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
             rm ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
-            mv ./VOICEVOX_ORT_TERMS.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/TERMS.md
+            mv ./VOICEVOX_ORT_TERMS.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/TERMS.txt
             mv ./build/third-party-notices.html ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}
           fi
           mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
