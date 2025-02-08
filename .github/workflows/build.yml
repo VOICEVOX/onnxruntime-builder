@@ -823,7 +823,7 @@ jobs:
           EOF
           )
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            release_notes+=$'\n'
+            release_notes+=$'\n\n' # NOTE: 2行なのはGFMで見た目が崩れるのを防ぐため
             release_notes+='<pre data-voicevox-onnxruntime-terms><code>'
             release_notes+=$(< ./VOICEVOX_ORT_TERMS.md)$'\n'
             release_notes+=$'</code></pre>\n'
