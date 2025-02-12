@@ -536,7 +536,7 @@ jobs:
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
-        run: find ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        run: find ./artifact/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
