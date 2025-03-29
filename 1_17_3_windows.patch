@@ -1,0 +1,10 @@
+--- a/include/onnxruntime/core/platform/ort_mutex.h
++++ b/include/onnxruntime/core/platform/ort_mutex.h
+@@ -5,6 +5,7 @@
+ #ifdef _WIN32
+ #include <Windows.h>
+ #include <mutex>
++#include <chrono>
+ namespace onnxruntime {
+ // Q: Why OrtMutex is better than std::mutex
+ // A: OrtMutex supports static initialization but std::mutex doesn't. Static initialization helps us prevent the "static
