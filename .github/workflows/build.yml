@@ -90,7 +90,7 @@ jobs:
             result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             build_opts: |-
               --compile_no_warning_as_error
               --cmake_extra_defines
@@ -99,7 +99,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             cuda_version: 12.4.1
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz
@@ -112,7 +112,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             cc_version: "10"
             cxx_version: "10"
             linux_cross_arch: arm-linux-gnueabihf
@@ -126,7 +126,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             cc_version: "10"
             cxx_version: "10"
             linux_cross_arch: aarch64-linux-gnu
@@ -160,7 +160,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             build_opts: |-
               --compile_no_warning_as_error
               --android
@@ -171,7 +171,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             build_opts: |-
               --compile_no_warning_as_error
               --android
