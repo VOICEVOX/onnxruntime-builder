@@ -130,7 +130,6 @@ jobs:
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
-              --arm
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
@@ -143,7 +142,6 @@ jobs:
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
-              --arm64
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
@@ -156,7 +154,6 @@ jobs:
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
-              --arm64
               --use_webgpu
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
