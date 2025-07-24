@@ -136,9 +136,6 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-22.04-arm
-            cc_version: "12"
-            cxx_version: "12"
-            linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
@@ -148,9 +145,6 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
             os: ubuntu-22.04-arm
-            cc_version: "12"
-            cxx_version: "12"
-            linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
