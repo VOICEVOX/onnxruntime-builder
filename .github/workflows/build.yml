@@ -411,7 +411,7 @@ jobs:
         if: env.TARGET_LIBRARY == 'onnxruntime'
         with:
           repository: microsoft/onnxruntime
-          submodules: true
+          submodules: recursive
           ref: c1cbe086e7e12022eaad524e2f29202890c19c47  # v${{ env.ONNXRUNTIME_VERSION }}   # 1.23.0はまだリリースされていないので、最新のコミットを指定する
 
       - name: Restore the stashed build directory
@@ -423,7 +423,7 @@ jobs:
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         with:
           repository: microsoft/onnxruntime
-          submodules: true
+          submodules: recursive
           ref: v${{ env.ONNXRUNTIME_VERSION }}
           token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
 
