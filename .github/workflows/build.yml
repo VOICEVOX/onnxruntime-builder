@@ -124,8 +124,8 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
-            cc_version: "10"
-            cxx_version: "10"
+            cc_version: "12"
+            cxx_version: "12"
             linux_cross_arch: arm-linux-gnueabihf
             symlink_workaround: true
             build_opts: |-
@@ -137,8 +137,8 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-22.04-arm
-            cc_version: "10"
-            cxx_version: "10"
+            cc_version: "12"
+            cxx_version: "12"
             linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: |-
@@ -150,8 +150,8 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
             os: ubuntu-22.04-arm
-            cc_version: "10"
-            cxx_version: "10"
+            cc_version: "12"
+            cxx_version: "12"
             linux_cross_arch: aarch64-linux-gnu
             symlink_workaround: true
             build_opts: |-
