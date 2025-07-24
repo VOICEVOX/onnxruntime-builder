@@ -346,7 +346,7 @@ jobs:
         env:
           CMAKE_VERSION: 3.28.0
         run: |
-          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.sh"
+          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-$(uname -m).sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Set up CUDA
