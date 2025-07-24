@@ -138,6 +138,7 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-22.04-arm
+            gcc_version: "12"
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
@@ -147,6 +148,7 @@ jobs:
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
             os: ubuntu-22.04-arm
+            gcc_version: "12"
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
@@ -332,13 +334,9 @@ jobs:
               build-essential \
               git \
               wget \
-              qemu-user-binfmt
-
-          sudo apt-get install -y \
+              qemu-user-binfmt \
               gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
               g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" 100
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX" 100
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
