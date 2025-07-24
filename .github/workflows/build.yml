@@ -332,9 +332,13 @@ jobs:
               build-essential \
               git \
               wget \
-              qemu-user-binfmt \
+              qemu-user-binfmt
+
+          sudo apt-get install -y \
               gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
               g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" 100
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX" 100
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
