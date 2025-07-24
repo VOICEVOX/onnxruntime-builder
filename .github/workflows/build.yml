@@ -349,11 +349,11 @@ jobs:
           # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
           brew install protobuf@21
 
-      # ONNX Runtime v1.16.1 requires CMake 3.27 or higher.
+      # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
-          CMAKE_VERSION: 3.27.7
+          CMAKE_VERSION: 3.28.0
         run: |
           wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
