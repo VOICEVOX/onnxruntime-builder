@@ -634,6 +634,7 @@ jobs:
               --use_cuda) use_cuda=1 ;;
               --use_dml) use_dml=1 ;;
               --use_coreml) use_coreml=1 ;;
+              --use_webgpu) use_webgpu=1 ;;
             esac
           done
 
@@ -644,8 +645,9 @@ jobs:
               # ONNX Runtimeが示す順番に従う
               "devices": [
                 ("CUDA" | select($use_cuda == "1")),
-                ("DirectML" | select($use_dml == "1")),
                 ("CoreML" | select($use_coreml == "1")),
+                ("DirectML" | select($use_dml == "1")),
+                ("WebGPU" | select($use_webgpu == "1")),
                 "CPU"
               ] | join("/")
             }' \
@@ -655,6 +657,7 @@ jobs:
             --arg use_cuda "$use_cuda" \
             --arg use_dml "$use_dml" \
             --arg use_coreml "$use_coreml" \
+            --arg use_webgpu "$use_webgpu" \
             > "$RELEASE_NAME.json"
 
       - name: Upload specifications
