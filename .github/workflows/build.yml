@@ -81,6 +81,7 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --cuda_version 12.4 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。こうでもしないとビルド時間が6時間に収まらない
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Windows
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
@@ -122,6 +123,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。nvccが稀にTerminatedで落ちるので、失敗する確率を可能な限り下げる
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
