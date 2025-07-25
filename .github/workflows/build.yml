@@ -308,13 +308,17 @@ jobs:
               build-essential \
               git \
               wget \
-              qemu-user-binfmt \
-              gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
-              g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+              qemu-user-binfmt
 
-          # Set environment variable CC / CXX
-          echo CC="$ARCH_PREFIX"gcc-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
-          echo CXX="$ARCH_PREFIX"g++-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
+          if [ -n "${{ matrix.gcc_version }}" ]; then
+            sudo apt-get install -y \
+                gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
+                g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+
+            # Set environment variable CC / CXX
+            echo CC="$ARCH_PREFIX"gcc-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
+            echo CXX="$ARCH_PREFIX"g++-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
+          fi
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
