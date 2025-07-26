@@ -80,7 +80,7 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --cuda_version 12.4 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
-              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。こうでもしないとビルド時間が6時間に収まらない
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
@@ -118,7 +118,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。nvccが稀にTerminatedで落ちるので、失敗する確率を可能な限り下げる
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。nvccが稀にTerminatedで落ちるので、失敗する確率を可能な限り下げるため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
