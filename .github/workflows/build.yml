@@ -179,6 +179,7 @@ jobs:
               --compile_no_warning_as_error
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=arm64
+              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-coreml
             os: macos-13
@@ -189,6 +190,7 @@ jobs:
               --compile_no_warning_as_error
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=x86_64
+              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
             os: macos-13
