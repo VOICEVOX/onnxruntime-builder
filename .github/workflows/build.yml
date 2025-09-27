@@ -373,7 +373,13 @@ jobs:
         env:
           CMAKE_VERSION: 3.28.0
         run: |
-          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-$(uname -m).sh"
+          ARCH="$(uname -m)"
+          case "$ARCH" in
+            x86_64) ARCH_DL="x86_64" ;;
+            aarch64 | arm64) ARCH_DL="aarch64" ;;
+            *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+          esac
+          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-$ARCH_DL.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Set up CUDA
