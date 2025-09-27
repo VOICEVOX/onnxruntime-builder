@@ -357,8 +357,8 @@ jobs:
                 g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
 
             # Set environment variable CC / CXX
-            echo CC="$ARCH_PREFIX"gcc-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
-            echo CXX="$ARCH_PREFIX"g++-${{ matrix.gcc_version }} >> "$GITHUB_ENV"
+            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
           fi
 
       - name: Install build dependencies on macos
