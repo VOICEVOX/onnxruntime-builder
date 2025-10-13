@@ -131,7 +131,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。nvccが稀にTerminatedで落ちるので、失敗する確率を可能な限り下げるため。
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
