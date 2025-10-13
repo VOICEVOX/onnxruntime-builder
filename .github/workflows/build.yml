@@ -647,8 +647,8 @@ jobs:
           for arg in "${build_opts[@]}"; do
             case "$arg" in
               --use_cuda) use_cuda=1 ;;
-              --use_dml) use_dml=1 ;;
               --use_coreml) use_coreml=1 ;;
+              --use_dml) use_dml=1 ;;
               --use_webgpu) use_webgpu=1 ;;
             esac
           done
@@ -670,8 +670,8 @@ jobs:
             --arg os "$os" \
             --arg arch "$arch" \
             --arg use_cuda "$use_cuda" \
-            --arg use_dml "$use_dml" \
             --arg use_coreml "$use_coreml" \
+            --arg use_dml "$use_dml" \
             --arg use_webgpu "$use_webgpu" \
             > "$RELEASE_NAME.json"
 
