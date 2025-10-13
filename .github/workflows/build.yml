@@ -611,10 +611,8 @@ jobs:
             rm -r build/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            mv build/${{ matrix.artifact_name }}/{,ORT_}LICENSE
-            mv build/${{ matrix.artifact_name }}/{,ORT_}README.md
-            mv build/${{ matrix.artifact_name }}/{,Ort}ThirdPartyNotices.txt
-            mv ./VOICEVOX_LICENSE.md build/${{ matrix.artifact_name }}/LICENSE.md
+            rm build/${{ matrix.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
+            mv ./VOICEVOX_ORT_TERMS.md build/${{ matrix.artifact_name }}/TERMS.txt
             mv ./build/third-party-notices.html ./build/${{ matrix.artifact_name }}
           fi
           mv build/${{ matrix.artifact_name }} ./artifact/
