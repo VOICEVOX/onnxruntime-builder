@@ -140,7 +140,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
-            os: macos-13
+            os: macos-14
             build_opts: |-
               --compile_no_warning_as_error
               --cmake_extra_defines
@@ -150,7 +150,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
-            os: macos-13
+            os: macos-14
             build_opts: |-
               --compile_no_warning_as_error
               --cmake_extra_defines
@@ -182,7 +182,7 @@ jobs:
             result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
-            os: macos-13
+            os: macos-14
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -195,7 +195,7 @@ jobs:
             result_dir: build/Release
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
-            os: macos-13
+            os: macos-14
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -208,7 +208,7 @@ jobs:
             result_dir: build/Release
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
-            os: macos-13
+            os: macos-14
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -617,7 +617,7 @@ jobs:
 
   build-xcframework:
     needs: build-onnxruntime
-    runs-on: macos-13
+    runs-on: macos-14
     outputs:
       release-name: ${{ steps.gen-envs.outputs.release-name }}
     steps:
