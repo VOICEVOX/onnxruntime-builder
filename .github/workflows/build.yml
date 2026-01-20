@@ -166,7 +166,7 @@ jobs:
               --use_webgpu
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
-            os: macos-13
+            os: macos-14
             spec_os: macOS
             spec_arch: AArch64
             build_opts: |-
@@ -175,7 +175,7 @@ jobs:
               CMAKE_OSX_ARCHITECTURES=arm64
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
-            os: macos-13
+            os: macos-15-intel
             spec_os: macOS
             spec_arch: x86_64
             build_opts: |-
@@ -184,7 +184,7 @@ jobs:
               CMAKE_OSX_ARCHITECTURES=x86_64
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-coreml
-            os: macos-13
+            os: macos-14
             spec_os: macOS
             spec_arch: AArch64
             build_opts: |-
@@ -195,7 +195,7 @@ jobs:
               CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-coreml
-            os: macos-13
+            os: macos-15-intel
             spec_os: macOS
             spec_arch: x86_64
             build_opts: |-
@@ -206,7 +206,7 @@ jobs:
               CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
-            os: macos-13
+            os: macos-14
             spec_os: macOS
             spec_arch: AArch64
             build_opts: |-
@@ -216,7 +216,7 @@ jobs:
               CMAKE_OSX_ARCHITECTURES=arm64
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-webgpu
-            os: macos-13
+            os: macos-15-intel
             spec_os: macOS
             spec_arch: x86_64
             build_opts: |-
