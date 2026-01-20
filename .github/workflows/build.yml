@@ -283,7 +283,7 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch x86_64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
+              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphonesimulator
 
     env:
