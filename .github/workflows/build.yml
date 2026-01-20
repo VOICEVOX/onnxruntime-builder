@@ -29,7 +29,7 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ inputs.version || '1.17.3' }}
+    ${{ inputs.version || '1.23.0' }}
   RELEASE:
     |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
@@ -47,142 +47,206 @@ jobs:
         include:
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64
             os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
             os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
               --use_dml
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-webgpu
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
             os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
             cuda_version: 12.4.1
             # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
-            cuda_sub_packages: '["cudart", "cuobjdump", "nvcc", "nvdisasm", "thrust", "cublas_dev", "cufft_dev", "curand_dev", "cusolver_dev", "cusparse_dev", "visual_studio_integration"]'
+            cuda_sub_packages: |
+              ["cudart",
+               "cuobjdump",
+               "nvrtc",
+               "nvrtc_dev",
+               "nvcc",
+               "nvdisasm",
+               "thrust",
+               "cublas_dev",
+               "cufft_dev",
+               "curand_dev",
+               "cusolver_dev",
+               "cusparse_dev",
+               "visual_studio_integration"]
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
               --cuda_version 12.4 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build/Release
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
+            spec_os: Windows
+            spec_arch: x86
             build_opts: |-
               --compile_no_warning_as_error
               --x86
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Windows
-              CMAKE_SYSTEM_PROCESSOR=x86 # required for `cpuinfo`
-            result_dir: build/Release
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-webgpu
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
             os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
             build_opts: |-
               --compile_no_warning_as_error
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
             os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
             cuda_version: 12.4.1
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
-            cc_version: "10"
-            cxx_version: "10"
+            spec_os: Linux
+            spec_arch: ARMv7
+            gcc_version: "12"
             linux_cross_arch: arm-linux-gnueabihf
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
-              --arm
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
-            os: ubuntu-22.04
-            cc_version: "10"
-            cxx_version: "10"
-            linux_cross_arch: aarch64-linux-gnu
+            os: ubuntu-22.04-arm
+            spec_os: Linux
+            spec_arch: AArch64
+            gcc_version: "12"
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
-              --arm64
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Linux
-              CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-            result_dir: build
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
+            os: ubuntu-22.04-arm
+            spec_os: Linux
+            spec_arch: AArch64
+            gcc_version: "12"
+            symlink_workaround: true
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
-            os: macos-13
+            os: macos-14
+            spec_os: macOS
+            spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
               --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=arm64
-              CMAKE_SYSTEM_PROCESSOR=arm64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
-            os: macos-13
+            os: macos-15-intel
+            spec_os: macOS
+            spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
               --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Darwin
               CMAKE_OSX_ARCHITECTURES=x86_64
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-coreml
+            os: macos-14
+            spec_os: macOS
+            spec_arch: AArch64
+            build_opts: |-
+              --use_coreml
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=arm64
+              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-coreml
+            os: macos-15-intel
+            spec_os: macOS
+            spec_arch: x86_64
+            build_opts: |-
+              --use_coreml
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=x86_64
+              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
+            os: macos-14
+            spec_os: macOS
+            spec_arch: AArch64
+            build_opts: |-
+              --use_webgpu
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=arm64
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-webgpu
+            os: macos-15-intel
+            spec_os: macOS
+            spec_arch: x86_64
+            build_opts: |-
+              --use_webgpu
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=x86_64
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
             os: ubuntu-22.04
+            spec_os: Android
+            spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
               --android
               --android_abi x86_64
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Android
-              CMAKE_SYSTEM_PROCESSOR=x86_64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
             os: ubuntu-22.04
+            spec_os: Android
+            spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
               --android
               --android_abi arm64-v8a
-              --cmake_extra_defines
-              CMAKE_SYSTEM_NAME=Android
-              CMAKE_SYSTEM_PROCESSOR=aarch64 # required for `cpuinfo`
-            result_dir: build
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
-            os: macos-13
+            os: macos-14
+            spec_os: iOS
+            spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -191,11 +255,12 @@ jobs:
               --apple_sysroot iphoneos
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
+              --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
-            os: macos-13
+            os: macos-14
+            spec_os: iOS
+            spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -204,11 +269,12 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
+              --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
-            os: macos-13
+            os: macos-15-intel
+            spec_os: iOS
+            spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
               --skip_tests
@@ -218,7 +284,6 @@ jobs:
               --osx_arch x86_64
               --apple_deploy_target 16.0
               --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
-            result_dir: build/Release
             release_config: Release-iphonesimulator
 
     env:
@@ -276,17 +341,25 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS'
         run: brew install tree
 
-      - name: Install build dependencies on ubuntu
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
+      - name: Install and configure build dependencies on Linux
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
               build-essential \
               git \
               wget \
-              qemu-user-binfmt \
-              gcc-${{ matrix.cc_version }}"$ARCH_SUFFIX" \
-              g++-${{ matrix.cxx_version }}"$ARCH_SUFFIX"
+              qemu-user-binfmt
+
+          if [ -n "${{ matrix.gcc_version }}" ]; then
+            sudo apt-get install -y \
+                gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
+                g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+
+            # Set environment variable CC / CXX
+            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+          fi
 
       - name: Install build dependencies on macos
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
@@ -294,13 +367,19 @@ jobs:
           # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
           brew install protobuf@21
 
-      # ONNX Runtime v1.16.1 requires CMake 3.27 or higher.
+      # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
         env:
-          CMAKE_VERSION: 3.27.7
+          CMAKE_VERSION: 3.28.0
         run: |
-          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-x86_64.sh"
+          ARCH="$(uname -m)"
+          case "$ARCH" in
+            x86_64) ARCH_DL="x86_64" ;;
+            aarch64 | arm64) ARCH_DL="aarch64" ;;
+            *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+          esac
+          wget -O cmake.sh "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION-linux-$ARCH_DL.sh"
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Set up CUDA
@@ -356,7 +435,7 @@ jobs:
         if: env.TARGET_LIBRARY == 'onnxruntime'
         with:
           repository: microsoft/onnxruntime
-          submodules: true
+          submodules: recursive
           ref: v${{ env.ONNXRUNTIME_VERSION }}
 
       - name: Restore the stashed build directory
@@ -368,7 +447,7 @@ jobs:
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         with:
           repository: microsoft/onnxruntime
-          submodules: true
+          submodules: recursive
           ref: v${{ env.ONNXRUNTIME_VERSION }}
           token: ${{ secrets.PRODUCTION_GITHUB_TOKEN }}
 
@@ -389,11 +468,7 @@ jobs:
         with:
           path: builder
 
-      - name: Apply patch
-        run: |
-          git apply --ignore-whitespace --reject --whitespace=fix --verbose ./builder/1_17_3_*.patch
-
-      - name: Configure build environment for non-x86_64 Linux
+      - name: Configure build environment for cross-compiling on Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
           # Required for arm build
@@ -406,10 +481,6 @@ jobs:
             find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.linux_cross_arch }}/ ';'
             sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
-
-          # Set environment variable CC / CXX
-          echo CC="$ARCH_PREFIX"gcc-${{ matrix.cc_version }} >> "$GITHUB_ENV"
-          echo CXX="$ARCH_PREFIX"g++-${{ matrix.cxx_version }} >> "$GITHUB_ENV"
 
       - name: Run prepare.bash
         id: prepare
@@ -486,8 +557,20 @@ jobs:
 
       - name: Organize artifact
         run: |
+          if [ ${{ runner.os }} != Windows ]; then
+            cd ./build/Release
+            # make installだとビルド結果がキャッシュされていても再ビルドが走ってしまうので、cmake -P cmake_install.cmakeを使う
+            DESTDIR=../installed cmake -P cmake_install.cmake
+            cd ../..
+          fi
+          if [ ${{ runner.os }} = Linux ]; then
+            # Linuxではcopy_strip_binaryがlib64を参照するがmake installではlibしか生成されないのでmvする。
+            # TODO: 本来はちゃんとlib64を生成するようにすべき（要調査）
+            mv ./build/installed/usr/local/lib ./build/installed/usr/local/lib64
+          fi
+
           # コピー先artifactを予め削除しておく
-          rm -rf ${{ matrix.result_dir }}/${{ matrix.artifact_name }}
+          rm -rf build/${{ matrix.artifact_name }}
           rm -rf ./artifact
           # Set library name
           ARTIFACT_NAME=${{ matrix.artifact_name }}
@@ -507,32 +590,32 @@ jobs:
           # PDBファイル, Privacy.md, include/は不要なので省く
           if [ ${{ runner.os }} = Windows ]; then
             # https://github.com/microsoft/onnxruntime/blob/v1.16.3/tools/ci_build/github/azure-pipelines/templates/c-api-artifacts-package-and-publish-steps-windows.yml#L34-L72
-            mkdir -p ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib
-            git rev-parse HEAD > ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/GIT_COMMIT_ID
+            mkdir -p ./build/${{ matrix.artifact_name }}/lib
+            git rev-parse HEAD > ./build/${{ matrix.artifact_name }}/GIT_COMMIT_ID
             cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
-              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/
-            cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
-              ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
-            if [ -f ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
-              cp ./${{ matrix.result_dir }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
-                ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}/lib/
+              ./build/${{ matrix.artifact_name }}/
+            cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
+              ./build/${{ matrix.artifact_name }}/lib/
+            if [ -f ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
+              cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
+                ./build/${{ matrix.artifact_name }}/lib/
             fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
-              -r ${{ matrix.result_dir }} \
+              -r "$(pwd)/build" \
               -a ${{ matrix.artifact_name }} \
               -l "$onnxruntime_filename" \
               -c ${{ matrix.release_config }} \
               -s "$(pwd)" \
               -t "$(git rev-parse HEAD)"
-            rm -r ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{Privacy.md,include}
+            rm -r build/${{ matrix.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            rm ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
-            mv ./VOICEVOX_ORT_TERMS.md ${{ matrix.result_dir }}/${{ matrix.artifact_name }}/TERMS.txt
-            mv ./build/third-party-notices.html ./${{ matrix.result_dir }}/${{ matrix.artifact_name }}
+            rm build/${{ matrix.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
+            mv ./VOICEVOX_ORT_TERMS.md build/${{ matrix.artifact_name }}/TERMS.txt
+            mv ./build/third-party-notices.html ./build/${{ matrix.artifact_name }}
           fi
-          mv ${{ matrix.result_dir }}/${{ matrix.artifact_name }} ./artifact/
+          mv build/${{ matrix.artifact_name }} ./artifact/
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
@@ -558,21 +641,15 @@ jobs:
           ${{ matrix.build_opts }}
           )
 
+          os=${{ matrix.spec_os }}
+          arch=${{ matrix.spec_arch }}
+
           for arg in "${build_opts[@]}"; do
             case "$arg" in
-              CMAKE_SYSTEM_NAME=Windows) os=Windows ;;
-              CMAKE_SYSTEM_NAME=Linux) os=Linux ;;
-              CMAKE_SYSTEM_NAME=Darwin) os=macOS ;;
-              --android) os=Android ;;
-              --ios) os=iOS ;;
-
-              CMAKE_SYSTEM_PROCESSOR=x86_64 | CMAKE_OSX_ARCHITECTURES=x86_64 | x86_64) arch=x86_64 ;;
-              --x86) arch=x86 ;;
-              CMAKE_OSX_ARCHITECTURES=arm64 | --arm64 | arm64 | arm64-v8a) arch=AArch64 ;;
-              --arm) arch=ARMv7 ;;
-
               --use_cuda) use_cuda=1 ;;
+              --use_coreml) use_coreml=1 ;;
               --use_dml) use_dml=1 ;;
+              --use_webgpu) use_webgpu=1 ;;
             esac
           done
 
@@ -583,7 +660,9 @@ jobs:
               # ONNX Runtimeが示す順番に従う
               "devices": [
                 ("CUDA" | select($use_cuda == "1")),
+                ("CoreML" | select($use_coreml == "1")),
                 ("DirectML" | select($use_dml == "1")),
+                ("WebGPU" | select($use_webgpu == "1")),
                 "CPU"
               ] | join("/")
             }' \
@@ -591,7 +670,9 @@ jobs:
             --arg os "$os" \
             --arg arch "$arch" \
             --arg use_cuda "$use_cuda" \
+            --arg use_coreml "$use_coreml" \
             --arg use_dml "$use_dml" \
+            --arg use_webgpu "$use_webgpu" \
             > "$RELEASE_NAME.json"
 
       - name: Upload specifications
@@ -617,7 +698,7 @@ jobs:
 
   build-xcframework:
     needs: build-onnxruntime
-    runs-on: macos-13
+    runs-on: macos-14
     outputs:
       release-name: ${{ steps.gen-envs.outputs.release-name }}
     steps:
