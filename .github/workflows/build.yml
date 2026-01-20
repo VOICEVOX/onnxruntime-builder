@@ -255,7 +255,6 @@ jobs:
               --apple_sysroot iphoneos
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
             os: macos-14
@@ -269,7 +268,6 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch arm64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /opt/homebrew/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
             os: macos-15-intel
@@ -283,7 +281,6 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch x86_64
               --apple_deploy_target 16.0
-              --path_to_protoc_exe /usr/local/opt/protobuf@21/bin/protoc # Homebrewで入れた`protobuf@21`
             release_config: Release-iphonesimulator
 
     env:
@@ -360,12 +357,6 @@ jobs:
             echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
             echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
           fi
-
-      - name: Install build dependencies on macos
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'macos')
-        run: |
-          # Workaround for protoc https://github.com/microsoft/onnxruntime/issues/16238#issuecomment-1590398821
-          brew install protobuf@21
 
       # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake
