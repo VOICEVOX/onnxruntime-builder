@@ -459,6 +459,10 @@ jobs:
         with:
           path: builder
 
+      - name: Apply patch
+        run: |
+          find ./builder -name '*.patch' -exec git apply --ignore-whitespace --reject --whitespace=fix --verbose {} +
+
       - name: Configure build environment for cross-compiling on Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
         run: |
