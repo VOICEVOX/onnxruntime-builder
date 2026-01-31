@@ -1,0 +1,27 @@
+From e94153e82197bcd38a602a91831bc6835dac48af Mon Sep 17 00:00:00 2001
+From: Prathik Rao <prathik.rao@gmail.com>
+Date: Thu, 9 Oct 2025 16:52:07 -0700
+Subject: [PATCH] [WebGPU] bug fix related to bounds checking in conv kernel
+ (#26268)
+
+Fixes chatterbox model for transformers.js
+---
+ onnxruntime/core/providers/webgpu/nn/conv2d_mm_webgpu.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/onnxruntime/core/providers/webgpu/nn/conv2d_mm_webgpu.cc b/onnxruntime/core/providers/webgpu/nn/conv2d_mm_webgpu.cc
+index ee7a36d17c..bf52088835 100644
+--- a/onnxruntime/core/providers/webgpu/nn/conv2d_mm_webgpu.cc
++++ b/onnxruntime/core/providers/webgpu/nn/conv2d_mm_webgpu.cc
+@@ -103,7 +103,7 @@ std::string Conv2dMMProgram::Conv2dCommonSnippet(const ShaderVariableHelper& x,
+     }
+   } else {
+     sample_w << "let col = colIn * " << inner_element_size_w << ";\n"
+-             << "if (row < i32(uniforms.dim_inner) && col < i32(uniforms.dim_b_outer)) {\n"
++             << "if (row < i32(uniforms.dim_inner) && col < i32(uniforms.dim_a_outer)) {\n"
+              << "  " << get_w_snippet(inner_element_size_w) << "\n"
+              << "}\n"
+              << "return " << TypeSnippet(inner_element_size_w, data_type) << "(0.0);\n";
+-- 
+2.52.0
+
