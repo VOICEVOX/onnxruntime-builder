@@ -183,28 +183,6 @@ jobs:
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=x86_64
             release_config: Release
-          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-coreml
-            os: macos-14
-            spec_os: macOS
-            spec_arch: AArch64
-            build_opts: |-
-              --use_coreml
-              --compile_no_warning_as_error
-              --cmake_extra_defines
-              CMAKE_OSX_ARCHITECTURES=arm64
-              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
-            release_config: Release
-          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-coreml
-            os: macos-15-intel
-            spec_os: macOS
-            spec_arch: x86_64
-            build_opts: |-
-              --use_coreml
-              --compile_no_warning_as_error
-              --cmake_extra_defines
-              CMAKE_OSX_ARCHITECTURES=x86_64
-              CMAKE_POLICY_VERSION_MINIMUM=3.5  # CoreMLで使っているpsimdがまだCMake 4.0に対応していないため
-            release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
             os: macos-14
             spec_os: macOS
@@ -642,7 +620,6 @@ jobs:
           for arg in "${build_opts[@]}"; do
             case "$arg" in
               --use_cuda) use_cuda=1 ;;
-              --use_coreml) use_coreml=1 ;;
               --use_dml) use_dml=1 ;;
               --use_webgpu) use_webgpu=1 ;;
             esac
@@ -655,7 +632,6 @@ jobs:
               # ONNX Runtimeが示す順番に従う
               "devices": [
                 ("CUDA" | select($use_cuda == "1")),
-                ("CoreML" | select($use_coreml == "1")),
                 ("DirectML" | select($use_dml == "1")),
                 ("WebGPU" | select($use_webgpu == "1")),
                 "CPU"
@@ -665,7 +641,6 @@ jobs:
             --arg os "$os" \
             --arg arch "$arch" \
             --arg use_cuda "$use_cuda" \
-            --arg use_coreml "$use_coreml" \
             --arg use_dml "$use_dml" \
             --arg use_webgpu "$use_webgpu" \
             > "$RELEASE_NAME.json"
