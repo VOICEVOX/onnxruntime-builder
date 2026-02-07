@@ -1,3 +1,8 @@
+# 処理の流れ
+# 1. create-draft-release: タグなしでdraft releaseを先に作成
+# 2. build-onnxruntime等: 各成果物をdraft releaseにアップロード
+# 3. prerelease: 全ビルド成功後に初めてタグを作成し、draftをprereleaseに変更
+
 name: Build C++ Shared Library
 
 on:
@@ -39,7 +44,53 @@ defaults:
     shell: bash
 
 jobs:
+  create-draft-release:
+    runs-on: ubuntu-latest
+    outputs:
+      # `RELEASE`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
+      release: ${{ steps.create-draft-release.outputs.release || 'null' }}
+    steps:
+      - name: Confirm that the tag does not exist at the moment
+        if: env.RELEASE == 'true'
+        run: |
+          tag=$TARGET_LIBRARY-$ONNXRUNTIME_VERSION
+          exists=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -q '[.] | flatten | any(.ref == "refs/tags/'"$tag"'")'
+          )
+          if [ "$exists" = true ]; then
+            echo "::error title=create-draft-release::'refs/tags/$tag' already exists"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create a draft release without real tag
+        if: env.RELEASE == 'true'
+        id: create-draft-release
+        run: |
+          tag=$TARGET_LIBRARY-$ONNXRUNTIME_VERSION
+          release=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/releases" \
+              --method POST \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -f "tag_name=$tag" \
+              -f "target_commitish=$GITHUB_SHA" \
+              -f "name=$tag" \
+              -F draft=true \
+              -q '{ upload_url, id, tag_name }'
+          )
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-onnxruntime:
+    needs: create-draft-release
     strategy:
       fail-fast: false
       matrix:
@@ -659,15 +710,13 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: ./builder/.github/actions/upload-gh-release-assets
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.tgz
-          prerelease: true
+          upload-url: ${{ fromJson(needs.create-draft-release.outputs.release).upload_url }}
+          files: ${{ env.RELEASE_NAME }}.tgz
 
   build-xcframework:
-    needs: build-onnxruntime
+    needs: [create-draft-release, build-onnxruntime]
     runs-on: macos-14
     outputs:
       release-name: ${{ steps.gen-envs.outputs.release-name }}
@@ -758,12 +807,10 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: ./.github/actions/upload-gh-release-assets
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.zip
-          prerelease: true
+          upload-url: ${{ fromJson(needs.create-draft-release.outputs.release).upload_url }}
+          files: ${{ env.RELEASE_NAME }}.zip
 
   get-terms:
     runs-on: ubuntu-22.04
@@ -799,7 +846,7 @@ jobs:
           path: VOICEVOX_ORT_TERMS.md
 
   build-spec-table:
-    needs: [build-onnxruntime, build-xcframework, get-terms]
+    needs: [create-draft-release, build-onnxruntime, build-xcframework, get-terms]
     runs-on: ubuntu-22.04
     steps:
       - name: Download specifications
@@ -881,8 +928,42 @@ jobs:
 
       - name: Update release notes
         if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release-notes.md
-          prerelease: true
-          tag_name: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+        run: |
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create-draft-release.outputs.release).id }}" \
+            --method PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -f body="$(< release-notes.md)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  prerelease:
+    needs: [create-draft-release, build-onnxruntime, build-xcframework, build-spec-table]
+    if: inputs.release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the tag
+        run: |
+          tag=${{ fromJson(needs.create-draft-release.outputs.release).tag_name }}
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/git/refs" \
+            --method POST \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -f "ref=refs/tags/$tag" \
+            -f "sha=$GITHUB_SHA"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prerelease
+        run: |
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create-draft-release.outputs.release).id }}" \
+            --method PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -F draft=false \
+            -F prerelease=true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
