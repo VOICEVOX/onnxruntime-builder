@@ -1,0 +1,173 @@
+name: Publish a release
+
+on:
+  push:
+    tags:
+      - '*'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  get-release:
+    name: Check if the release is draft
+    runs-on: ubuntu-latest
+    outputs:
+      num-assets: ${{ fromJson(steps.get-release.outputs.release).numAssets }}
+      body-is-empty: ${{ fromJson(steps.get-release.outputs.release).bodyIsEmpty }}
+      is-draft: ${{ fromJson(steps.get-release.outputs.release).isDraft }}
+      target-commitish: ${{ fromJson(steps.get-release.outputs.release).targetCommitish }}
+    steps:
+      - name: Check if the tag name is unique in recent releases
+        run: |
+          multiple=$(
+            gh release -R "$GITHUB_REPOSITORY" list \
+              --json tagName \
+              -q 'map(select(.tagName == "'"$GITHUB_REF_NAME"'")) | length > 1'
+          )
+          if [ "$multiple" = true ]; then
+            echo "::error title=get-release::Multiple '$GITHUB_REF_NAME'"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if the release is draft
+        id: get-release
+        run: |
+          release=$(
+            gh release -R "$GITHUB_REPOSITORY" view \
+              "$GITHUB_REF_NAME" \
+              --json assets,body,isDraft,targetCommitish \
+              -q '{ numAssets: .assets | length, bodyIsEmpty: .body | trim | length == 0, isDraft, targetCommitish }'
+          )
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish the release
+    needs: [get-release]
+    runs-on: ubuntu-latest
+    if: fromJson(needs.get-release.outputs.is-draft)
+    steps:
+      - name: Check the release body
+        run: |
+          body_is_empty=${{ needs.get-release.outputs.body-is-empty }}
+          if [ $body_is_empty = true ]; then
+            echo '::error title=publish::The release body is empty'
+            exit 1
+          fi
+
+      - name: Check the number of assets
+        run: |
+          actual_num_assets=${{ needs.get-release.outputs.num-assets }}
+          target_commitish=${{ needs.get-release.outputs.target-commitish }}
+
+          build_workflow=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/contents/.github/workflows/build.yml?ref=$target_commitish" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28'
+          )
+
+          [ "$(jq -r .type <<< "$build_workflow")" = file ]
+          [ "$(jq -r .encoding <<< "$build_workflow")" = base64 ]
+
+          build_workflow=$(jq -r .content <<< "$build_workflow")
+          build_workflow=$(base64 -d <<< "$build_workflow")
+          expected_num_assets=$(
+            ruby \
+              -r yaml \
+              -e 'print YAML.safe_load($*[0])["jobs"]["build-onnxruntime"]["strategy"]["matrix"]["include"].size + 1' \
+              "$build_workflow"
+          )
+          if [ "$actual_num_assets" -ne "$expected_num_assets" ]; then
+            echo "::error title=publish::Expected $expected_num_assets assets. Actual: $actual_num_assets"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get the tag object
+        id: tag-object
+        run: |
+          object=$(gh api "/repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" -q .object)
+          echo "type=$(jq -r .type <<< "$object")" >> "$GITHUB_OUTPUT"
+          echo "sha=$(jq -r .sha <<< "$object")" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check if the tag points the right commit
+        run: |
+          tag_type=${{ steps.tag-object.outputs.type }}
+          tag_sha=${{ steps.tag-object.outputs.sha }}
+
+          case $tag_type in
+            commit)
+              commit=$tag_sha ;;
+            tag)
+              commit=$(
+                gh api \
+                  "/repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+                  -H 'Accept: application/vnd.github+json' \
+                  -H 'X-GitHub-Api-Version: 2022-11-28' \
+                  -q .object.sha
+              ) ;;
+            *)
+              echo '::error title=publish::Unexpected object type'
+              exit 1
+          esac
+
+          target_commitish=${{ needs.get-release.outputs.target-commitish }}
+
+          if [[ "$target_commitish" =~ ^[0-9a-f]{40,}$ ]]; then
+            expected=$target_commitish
+          else
+            expected=$(
+              gh api \
+                "/repos/$GITHUB_REPOSITORY/git/ref/heads/$target_commitish" \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                -q .object.sha
+            )
+          fi
+
+          if [ "$commit" != "$expected" ]; then
+            echo "::error title=publish::'$GITHUB_REF_NAME' points to wrong commit. Expected '$expected'"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Warn about unverified tags
+        run: |
+          tag_type=${{ steps.tag-object.outputs.type }}
+          tag_sha=${{ steps.tag-object.outputs.sha }}
+
+          case $tag_type in
+            commit)
+              echo '::warning title=publish::Next time, please push an annotated tag' ;;
+            tag)
+              verified=$(
+                gh api \
+                  "/repos/$GITHUB_REPOSITORY/git/tags/$tag_sha" \
+                  -H 'Accept: application/vnd.github+json' \
+                  -H 'X-GitHub-Api-Version: 2022-11-28' \
+                  -q .verification.verified
+              )
+              if [ "$verified" = false ]; then
+                echo "::warning title=publish::'$GITHUB_REF_NAME' is unverified"
+              fi ;;
+            *)
+              echo '::error title=publish::Unexpected object type'
+              exit 1
+          esac
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Undraft the release and set it as a pre-prerelease
+        run: gh release -R "$GITHUB_REPOSITORY" edit "$GITHUB_REF_NAME" --draft=false --prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
