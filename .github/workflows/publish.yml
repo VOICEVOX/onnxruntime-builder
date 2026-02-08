@@ -1,0 +1,56 @@
+name: Publish a release
+
+on:
+  push:
+    tags:
+      - '*'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-if-draft:
+    name: Check if the release is draft
+    runs-on: ubuntu-latest
+    outputs:
+      is-draft: ${{ steps.check-if-draft.outputs.is-draft }}
+    steps:
+      - name: Check if the release is draft
+        id: check-if-draft
+        run: |
+          is_draft=$(gh release -R "$GITHUB_REPOSITORY" view --json isDraft -q .isDraft)
+          echo "is-draft=$is_draft" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish the release
+    needs: [check-if-draft]
+    runs-on: ubuntu-latest
+    if: fromJson(needs.check-if-draft.outputs.is-draft)
+    steps:
+      - name: Warn about unverified tags
+        run: |
+          object=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$GITHUB_REF_NAME" -q .object)
+
+          if [ "$(jq -r .type <<< "$object")" = commit ]; then
+            echo '::warning title=publish::Please push an annotated tag'
+            exit
+          fi
+
+          verified=$(
+            gh api \
+              "repos/$GITHUB_REPOSITORY/git/tags/$(jq -r .sha <<< "$object")" \
+              -q .verification.verified
+          )
+          if [ "$verified" = false ]; then
+            echo "::warning title=publish::'$GITHUB_REF_NAME' is unverified"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Undraft the release and set it as a pre-prerelease
+        run: gh release -R "$GITHUB_REPOSITORY" edit "$GITHUB_REF_NAME" --draft=false --prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

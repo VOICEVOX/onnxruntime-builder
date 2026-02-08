@@ -1,12 +1,16 @@
 # 処理の流れ
-# 1. create-draft-release: タグなしでdraft releaseを先に作成
+# 1. 以下の二つを順不同で行う
+#   a. create-draft-release: タグなしでdraft releaseを先に作成
+#   b. （VOICEVOX ONNX Runtimeのみ）利用規約を取得
 # 2. build-onnxruntime等: 各成果物をdraft releaseにアップロード
-# 3. prerelease: 全ビルド成功後に初めてタグを作成し、draftをprereleaseに変更
+# 3. b.と2.の情報からreleaseのbodyを作成
 
 name: Build C++ Shared Library
 
 on:
   push:
+    branches:
+      - '**'
   workflow_dispatch:
     inputs:
       version:
@@ -44,7 +48,16 @@ defaults:
     shell: bash
 
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+    steps:
+      - name: Nop
+        run: ':'
+
   create-draft-release:
+    needs: config
     runs-on: ubuntu-latest
     outputs:
       # `RELEASE`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
@@ -53,13 +66,13 @@ jobs:
       - name: Confirm that the tag does not exist at the moment
         if: env.RELEASE == 'true'
         run: |
-          tag=$TARGET_LIBRARY-$ONNXRUNTIME_VERSION
+          tag=${{ needs.config.outputs.tag }}
           exists=$(
             gh api \
               "/repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
               -H 'Accept: application/vnd.github+json' \
               -H 'X-GitHub-Api-Version: 2022-11-28' \
-              -q '[.] | flatten | any(.ref == "refs/tags/'"$tag"'")'
+              -q '[.] | flatten | any(.ref == "refs/tags/'$tag'")'
           )
           if [ "$exists" = true ]; then
             echo "::error title=create-draft-release::'refs/tags/$tag' already exists"
@@ -68,22 +81,21 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create a draft release without real tag
+      - name: Create a tagless draft release
         if: env.RELEASE == 'true'
         id: create-draft-release
         run: |
-          tag=$TARGET_LIBRARY-$ONNXRUNTIME_VERSION
+          name=${{ needs.config.outputs.tag }}
           release=$(
             gh api \
               "/repos/$GITHUB_REPOSITORY/releases" \
               --method POST \
               -H 'Accept: application/vnd.github+json' \
               -H 'X-GitHub-Api-Version: 2022-11-28' \
-              -f "tag_name=$tag" \
               -f "target_commitish=$GITHUB_SHA" \
-              -f "name=$tag" \
+              -f name=$name \
               -F draft=true \
-              -q '{ upload_url, id, tag_name }'
+              -q '{ upload_url, html_url, id }'
           )
           echo "release=$release" >> "$GITHUB_OUTPUT"
         env:
@@ -938,32 +950,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  prerelease:
-    needs: [create-draft-release, build-onnxruntime, build-xcframework, build-spec-table]
-    if: inputs.release
+  set-tag:
+    needs: [config, create-draft-release, build-spec-table]
     runs-on: ubuntu-latest
     steps:
-      - name: Create the tag
+      - name: Set the tag
         run: |
-          tag=${{ fromJson(needs.create-draft-release.outputs.release).tag_name }}
-          gh api \
-            "/repos/$GITHUB_REPOSITORY/git/refs" \
-            --method POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -f "ref=refs/tags/$tag" \
-            -f "sha=$GITHUB_SHA"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prerelease
-        run: |
-          gh api \
-            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create-draft-release.outputs.release).id }}" \
-            --method PATCH \
-            -H 'Accept: application/vnd.github+json' \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            -F draft=false \
-            -F prerelease=true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          html_url=${{ fromJson(needs.create-draft-release.outputs.release).html_url }}
+          tag=${{ needs.config.outputs.tag }}
+          untagged_tag=${html_url##*/}
+          gh release edit "$untagged_tag" --tag $tag
