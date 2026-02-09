@@ -11,7 +11,7 @@ defaults:
 
 jobs:
   get-release:
-    name: Check if the release is draft
+    name: Get the release
     runs-on: ubuntu-latest
     outputs:
       num-assets: ${{ fromJson(steps.get-release.outputs.release).numAssets }}
@@ -19,7 +19,7 @@ jobs:
       is-draft: ${{ fromJson(steps.get-release.outputs.release).isDraft }}
       target-commitish: ${{ fromJson(steps.get-release.outputs.release).targetCommitish }}
     steps:
-      - name: Check if the tag name is unique in recent releases
+      - name: Check if no other releases with the same tag name exist in recent releases
         run: |
           multiple=$(
             gh release -R "$GITHUB_REPOSITORY" list \
@@ -27,13 +27,13 @@ jobs:
               -q 'map(select(.tagName == "'"$GITHUB_REF_NAME"'")) | length > 1'
           )
           if [ "$multiple" = true ]; then
-            echo "::error title=get-release::Multiple '$GITHUB_REF_NAME'"
+            echo "::error title=get-release::Multiple '$GITHUB_REF_NAME' in recent releases"
             exit 1
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check if the release is draft
+      - name: Get the release
         id: get-release
         run: |
           release=$(
