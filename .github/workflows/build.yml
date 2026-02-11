@@ -498,6 +498,23 @@ jobs:
             1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
             2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
 
+      - name: Show size of the build directory for debug (before removing unnecessary files)
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
+        run: du -hd 0 ./build
+
+      # 全キャッシュの合計を5GB以内に抑えられれば十分とする。
+      - name: Remove known unnecessary files
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
+        run: |
+          find ./build/Release -maxdepth 1 '(' -name _deps -o -name testdata ')' -print -exec rm -r {} +
+          find ./build/Release -maxdepth 1 '(' -name '*.a' -o -name '*.lib' -not -name onnxruntime.lib ')' -print -delete
+          find ./build/Release/CMakeFiles -mindepth 1 -maxdepth 1 -not -name Export -print -exec rm -r {} +
+          find ./build/Release -maxdepth 2 -path '*/${{ matrix.release_config }}/*_test*.app' -print -exec rm -r {} +
+
+      - name: Show size of the build directory for debug (after removing unnecessary files)
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
+        run: du -hd 0 ./build
+
       - name: Encrypt log
         if: |
           failure()
