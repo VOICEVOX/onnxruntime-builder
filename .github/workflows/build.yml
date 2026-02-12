@@ -506,6 +506,7 @@ jobs:
       - name: Remove known unnecessary files
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
         run: |
+          find ./build -maxdepth 1 -name Packages -print -exec rm -r {} +
           find ./build/Release -maxdepth 1 '(' -name _deps -o -name testdata ')' -print -exec rm -r {} +
           find ./build/Release -maxdepth 1 '(' -name '*.a' -o -name '*.lib' -not -name onnxruntime.lib ')' -print -delete
           find ./build/Release/CMakeFiles -mindepth 1 -maxdepth 1 -not -name Export -print -exec rm -r {} +
