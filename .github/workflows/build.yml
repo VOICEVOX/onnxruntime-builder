@@ -502,7 +502,7 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
         run: du -hd 0 ./build
 
-      # 全キャッシュの合計を5GB以内に抑えられれば十分とする。
+      # 全キャッシュの合計を10GBよりちょっと少なめ程度に抑えられれば十分とする。
       - name: Remove known unnecessary files
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
         run: |
