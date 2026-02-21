@@ -1,7 +1,16 @@
+# 処理の流れ
+# 1. 以下の二つを順不同で行う
+#   a. create-draft-release: タグなしでdraft releaseを先に作成
+#   b. （VOICEVOX ONNX Runtimeのみ）利用規約を取得
+# 2. build-onnxruntime等: 各成果物をdraft releaseにアップロード
+# 3. b.と2.の情報からreleaseのbodyを作成
+
 name: Build C++ Shared Library
 
 on:
   push:
+    branches:
+      - '**'
   workflow_dispatch:
     inputs:
       version:
@@ -39,7 +48,62 @@ defaults:
     shell: bash
 
 jobs:
+  config:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+    steps:
+      - name: Nop
+        run: ':'
+
+  create-draft-release:
+    needs: config
+    runs-on: ubuntu-latest
+    outputs:
+      # `RELEASE`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
+      release: ${{ steps.create-draft-release.outputs.release || 'null' }}
+    steps:
+      - name: Confirm that the tag does not exist at the moment
+        if: env.RELEASE == 'true'
+        run: |
+          tag=${{ needs.config.outputs.tag }}
+          exists=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/git/matching-refs/tags/$tag" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -q '[.] | flatten | any(.ref == "refs/tags/'$tag'")'
+          )
+          if [ "$exists" = true ]; then
+            echo "::error title=create-draft-release::'refs/tags/$tag' already exists"
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create a tagless draft release
+        if: env.RELEASE == 'true'
+        id: create-draft-release
+        run: |
+          name=${{ needs.config.outputs.tag }}
+          release=$(
+            gh api \
+              "/repos/$GITHUB_REPOSITORY/releases" \
+              --method POST \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              -f tag_name= \
+              -f "target_commitish=$GITHUB_SHA" \
+              -f name=$name \
+              -F draft=true \
+              -q '{ upload_url, id }'
+          )
+          echo "release=$release" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build-onnxruntime:
+    needs: create-draft-release
     strategy:
       fail-fast: false
       matrix:
@@ -677,15 +741,13 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: ./builder/.github/actions/upload-gh-release-assets
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.tgz
-          prerelease: true
+          upload-url: ${{ fromJson(needs.create-draft-release.outputs.release).upload_url }}
+          files: ${{ env.RELEASE_NAME }}.tgz
 
   build-xcframework:
-    needs: build-onnxruntime
+    needs: [create-draft-release, build-onnxruntime]
     runs-on: macos-14
     outputs:
       release-name: ${{ steps.gen-envs.outputs.release-name }}
@@ -776,12 +838,10 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: ./.github/actions/upload-gh-release-assets
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-          file: ${{ env.RELEASE_NAME }}.zip
-          prerelease: true
+          upload-url: ${{ fromJson(needs.create-draft-release.outputs.release).upload_url }}
+          files: ${{ env.RELEASE_NAME }}.zip
 
   get-terms:
     runs-on: ubuntu-22.04
@@ -817,7 +877,7 @@ jobs:
           path: VOICEVOX_ORT_TERMS.md
 
   build-spec-table:
-    needs: [build-onnxruntime, build-xcframework, get-terms]
+    needs: [config, create-draft-release, build-onnxruntime, build-xcframework, get-terms]
     runs-on: ubuntu-22.04
     steps:
       - name: Download specifications
@@ -859,7 +919,7 @@ jobs:
             release_notes+="      <td>$(jq .os -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .arch -r <<< "$specs")</td>"$'\n'
             release_notes+="      <td>$(jq .devices -r <<< "$specs")</td>"$'\n'
-            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
+            release_notes+="      <td><a href=\"https://github.com/$GITHUB_REPOSITORY/releases/download/${{ needs.config.outputs.tag }}/$release_name.tgz\">$release_name.tgz</a></td>"$'\n'
             release_notes+=$'    </tr>\n'
           done
           release_notes+=$(
@@ -883,7 +943,7 @@ jobs:
                 <td>iOS</td>
                 <td>AArch64/x86_64</td>
                 <td>CPU</td>
-                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/$TARGET_LIBRARY-$ONNXRUNTIME_VERSION/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
+                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/${{ needs.config.outputs.tag }}/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
               </tr>
             </tbody>
           </table>
@@ -899,8 +959,48 @@ jobs:
 
       - name: Update release notes
         if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          body_path: release-notes.md
-          prerelease: true
-          tag_name: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
+        run: |
+          gh api \
+            "/repos/$GITHUB_REPOSITORY/releases/${{ fromJson(needs.create-draft-release.outputs.release).id }}" \
+            --method PATCH \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            -f body="$(< release-notes.md)"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  set-tag-name:
+    needs: [config, create-draft-release, build-spec-table]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the tag name
+        if: env.RELEASE == 'true'
+        run: |
+          tag=${{ needs.config.outputs.tag }}
+          release_id=${{ fromJson(needs.create-draft-release.outputs.release).id }}
+
+          # 挙動が安定しないようなので、５回まで連続で試行する。それでも駄目なら人間が手動で設定するようにする。
+          for _ in {1..5}; do
+            updated=$(
+              gh api \
+                "/repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                --method PATCH \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'X-GitHub-Api-Version: 2022-11-28' \
+                -f tag_name=$tag \
+                -f "target_commitish=$GITHUB_SHA" \
+                -q '{ tag_name, target_commitish }'
+            )
+
+            if [ "$(jq -r .tag_name <<< "$updated")" = $tag ] &&
+                [ "$(jq -r .target_commitish <<< "$updated")" = "$GITHUB_SHA" ]; then
+              exit 0
+            fi
+            echo 'tag_name was not set. retrying' >&2
+            sleep 1
+          done
+
+          echo "::error title=set-tag-name::Could not set 'tag_name'. Please set it manually"
+          exit 1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
