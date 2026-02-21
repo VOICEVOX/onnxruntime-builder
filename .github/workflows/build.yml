@@ -978,6 +978,8 @@ jobs:
         run: |
           tag=${{ needs.config.outputs.tag }}
           release_id=${{ fromJson(needs.create-draft-release.outputs.release).id }}
+
+          # 挙動が安定しないようなので、５回まで連続で試行する。それでも駄目なら人間が手動で設定するようにする。
           for _ in {1..5}; do
             updated=$(
               gh api \
@@ -992,7 +994,7 @@ jobs:
 
             if [ "$(jq -r .tag_name <<< "$updated")" = $tag ] &&
                 [ "$(jq -r .target_commitish <<< "$updated")" = "$GITHUB_SHA" ]; then
-              exit
+              exit 0
             fi
             echo 'tag_name was not set. retrying' >&2
             sleep 1
