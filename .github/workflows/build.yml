@@ -979,23 +979,19 @@ jobs:
           tag=${{ needs.config.outputs.tag }}
           release_id=${{ fromJson(needs.create-draft-release.outputs.release).id }}
           for _ in {1..5}; do
-            gh api \
-              "/repos/$GITHUB_REPOSITORY/releases/$release_id" \
-              --method PATCH \
-              -H 'Accept: application/vnd.github+json' \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              -f tag_name=$tag \
-              -f "target_commitish=$GITHUB_SHA"
-
-            release=$(
+            updated=$(
               gh api \
                 "/repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                --method PATCH \
                 -H 'Accept: application/vnd.github+json' \
                 -H 'X-GitHub-Api-Version: 2022-11-28' \
+                -f tag_name=$tag \
+                -f "target_commitish=$GITHUB_SHA" \
                 -q '{ tag_name, target_commitish }'
             )
-            if [ "$(jq -r .tag_name <<< "$release")" = $tag ] &&
-                [ "$(jq -r .target_commitish <<< "$release")" = "$GITHUB_SHA" ]; then
+
+            if [ "$(jq -r .tag_name <<< "$updated")" = $tag ] &&
+                [ "$(jq -r .target_commitish <<< "$updated")" = "$GITHUB_SHA" ]; then
               exit
             fi
             echo 'tag_name was not set. retrying' >&2
