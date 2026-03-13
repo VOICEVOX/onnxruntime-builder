@@ -451,10 +451,10 @@ jobs:
 
           # Prevent Exec Format Error during cross-compiling
           if ${{ matrix.symlink_workaround }}; then
-            mapfile -d '' -t sos < <(find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -print0)
-            for so in "${sos[@]}"; do
-              sudo ln -s "$so" /usr/lib/${{ matrix.linux_cross_arch }}/
-            done
+            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -print0 |
+              while IFS= read -r -d '' so; do
+                sudo ln -s "$so" /usr/lib/${{ matrix.linux_cross_arch }}/
+              done
             sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
 
@@ -614,10 +614,10 @@ jobs:
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
         run: |
-          mapfile -d '' -t dlls < <(find ./artifact/lib -name '*.dll' -print0)
-          for dll in "${dlls[@]}"; do
-            ./builder/codesign.bash "$dll"
-          done
+          find ./artifact/lib -name '*.dll' -print0 |
+            while IFS= read -r -d '' dll; do
+              ./builder/codesign.bash "$dll"
+            done
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
