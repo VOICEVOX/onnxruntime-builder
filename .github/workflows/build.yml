@@ -610,11 +610,18 @@ jobs:
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
-        run: find ./artifact/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        run: find ./artifact/lib -name '*.dll' -exec ./builder/codesign_windows.bash {} ';'
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
+
+      - name: Code signing (macOS)
+        if: runner.os == 'macOS' && inputs.code_signing
+        run: find ./artifact/lib -name '*.dylib' -exec ./builder/codesign_macos.bash {} ';'
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
