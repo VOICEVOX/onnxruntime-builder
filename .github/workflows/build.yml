@@ -370,11 +370,11 @@ jobs:
           mkdir "$download_dir"
 
           if [ ${{ runner.os }} = Windows ]; then
-            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
             unzip "$download_dir/cudnn.zip" -d "$download_dir"
             rm "$download_dir/cudnn.zip"
           else
-            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
             tar xvf "$download_dir/cudnn.tar.gz" -C "$download_dir/"
             rm "$download_dir/cudnn.tar.gz"
           fi
