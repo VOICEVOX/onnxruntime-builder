@@ -271,7 +271,7 @@ jobs:
     environment: ${{ inputs.target == 'voicevox_onnxruntime' && 'production' || '' }}
 
     steps:
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.10"
 
@@ -293,7 +293,7 @@ jobs:
       - name: Cache build result
         id: cache-build-result
         if: env.TARGET_LIBRARY == 'onnxruntime'
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: build/
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
@@ -308,7 +308,7 @@ jobs:
 
       - name: Install tree
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Windows'
-        uses: msys2/setup-msys2@v2
+        uses: msys2/setup-msys2@cafece8e6baf9247cf9b1bf95097b0b983cc558d # v2.31.0
         with:
           install: tree
 
@@ -353,7 +353,7 @@ jobs:
 
       - name: Set up CUDA
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-        uses: Jimver/cuda-toolkit@v0.2.16
+        uses: Jimver/cuda-toolkit@9b295696791d75d658d8de64c4a85097ad8abeaf # v0.2.16
         with:
           cuda: ${{ matrix.cuda_version }}
           sub-packages: ${{ matrix.cuda_sub_packages }}
@@ -400,7 +400,7 @@ jobs:
         run: mv ./build "$RUNNER_TEMP/"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: env.TARGET_LIBRARY == 'onnxruntime'
         with:
           repository: microsoft/onnxruntime
@@ -412,7 +412,7 @@ jobs:
         run: mv "$RUNNER_TEMP/build" .
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         with:
           repository: microsoft/onnxruntime
@@ -433,7 +433,7 @@ jobs:
           PRODUCTION_REPOSITORY_URL: ${{ secrets.PRODUCTION_REPOSITORY_URL }}
 
       - name: Checkout builder
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           path: builder
 
@@ -544,7 +544,7 @@ jobs:
             || steps.inspect-build-dir.outcome == 'failure'
           )
           && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: log_${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}_*.txt.gpg
@@ -624,7 +624,7 @@ jobs:
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ matrix.artifact_name }}
           path: artifact/*
@@ -671,7 +671,7 @@ jobs:
             > "$RELEASE_NAME.json"
 
       - name: Upload specifications
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: specs-${{ matrix.artifact_name }}
           path: ${{ env.RELEASE_NAME }}.json
@@ -684,7 +684,7 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
@@ -705,19 +705,19 @@ jobs:
           echo "RELEASE_NAME=$RELEASE_NAME" >> "$GITHUB_ENV"
           echo "ONNXRUNTIME_BASENAME=lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib" >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ env.TARGET_LIBRARY }}-ios-arm64
           path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ env.TARGET_LIBRARY }}-ios-sim-arm64
           path: artifact/${{ env.TARGET_LIBRARY }}-aarch64-apple-ios-sim
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ env.TARGET_LIBRARY }}-ios-sim-x86_64
           path: artifact/${{ env.TARGET_LIBRARY }}-x86_64-apple-ios
@@ -783,7 +783,7 @@ jobs:
 
       - name: Upload to Release
         if: env.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # latest
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
@@ -796,7 +796,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         with:
           repository: microsoft/onnxruntime
@@ -818,7 +818,7 @@ jobs:
 
       - name: Upload terms of use
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: voicevox-ort-terms
           path: VOICEVOX_ORT_TERMS.md
@@ -828,7 +828,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Download specifications
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           path: specs
           pattern: specs-*
@@ -836,7 +836,7 @@ jobs:
 
       - name: Download terms of use
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: voicevox-ort-terms
 
@@ -906,7 +906,7 @@ jobs:
 
       - name: Update release notes
         if: env.RELEASE == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           body_path: release-notes.md
           prerelease: true
