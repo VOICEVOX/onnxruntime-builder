@@ -299,7 +299,7 @@ jobs:
           key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
 
       - name: Free Disk Space
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Linux' && contains(matrix.build_opts, '--use_cuda')
         with:
           tool-cache: false
