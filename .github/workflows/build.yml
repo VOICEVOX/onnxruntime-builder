@@ -434,11 +434,11 @@ jobs:
           mkdir "$download_dir"
 
           if [ ${{ runner.os }} = Windows ]; then
-            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
             unzip "$download_dir/cudnn.zip" -d "$download_dir"
             rm "$download_dir/cudnn.zip"
           else
-            curl -L "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
             tar xvf "$download_dir/cudnn.tar.gz" -C "$download_dir/"
             rm "$download_dir/cudnn.tar.gz"
           fi
@@ -515,7 +515,10 @@ jobs:
 
           # Prevent Exec Format Error during cross-compiling
           if ${{ matrix.symlink_workaround }}; then
-            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -exec sudo ln -s {} /usr/lib/${{ matrix.linux_cross_arch }}/ ';'
+            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -print0 |
+              while IFS= read -r -d '' so; do
+                sudo ln -s "$so" /usr/lib/${{ matrix.linux_cross_arch }}/
+              done
             sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
 
@@ -674,11 +677,26 @@ jobs:
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
-        run: find ./artifact/lib -name '*.dll' -exec ./builder/codesign.bash {} ';'
+        run: |
+          find ./artifact/lib -name '*.dll' -print0 |
+            while IFS= read -r -d '' dll; do
+              ./builder/codesign_windows.bash "$dll"
+            done
         env:
           ESIGNERCKA_USERNAME: ${{ secrets.ESIGNERCKA_USERNAME }}
           ESIGNERCKA_PASSWORD: ${{ secrets.ESIGNERCKA_PASSWORD }}
           ESIGNERCKA_TOTP_SECRET: ${{ secrets.ESIGNERCKA_TOTP_SECRET }}
+
+      - name: Code signing (macOS)
+        if: runner.os == 'macOS' && inputs.code_signing
+        run: |
+          find ./artifact/lib -name '*.dylib' -print0 |
+            while IFS= read -r -d '' dylib; do
+              ./builder/codesign_macos.bash "$dylib"
+            done
+        env:
+          APPLE_P12_BASE64: ${{ secrets.APPLE_P12_BASE64 }}
+          APPLE_P12_PASSWORD: ${{ secrets.APPLE_P12_PASSWORD }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

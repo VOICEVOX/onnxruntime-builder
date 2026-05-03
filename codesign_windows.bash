@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # !!! コードサイニング証明書を取り扱うので取り扱い注意 !!!
 
-# eSignerCKAを使ってコード署名する
+# Windows上でeSignerCKAを使ってコード署名する
 
 set -eu
 
@@ -27,7 +27,7 @@ target_file_glob="$1"
 # eSignerCKAのセットアップ
 INSTALL_DIR='..\eSignerCKA'
 if [ ! -d "$INSTALL_DIR" ]; then
-    curl -LO "https://github.com/SSLcom/eSignerCKA/releases/download/v1.0.6/SSL.COM-eSigner-CKA_1.0.6.zip"
+    curl -fLO --retry 3 --retry-delay 5 "https://github.com/SSLcom/eSignerCKA/releases/download/v1.0.6/SSL.COM-eSigner-CKA_1.0.6.zip"
     unzip -o SSL.COM-eSigner-CKA_1.0.6.zip
     mv ./*eSigner*CKA_*.exe eSigner_CKA_Installer.exe
     powershell "
@@ -48,6 +48,12 @@ THUMBPRINT=$(
         echo "$($CodeSigningCert.Thumbprint)"
     '
 )
+
+# 証明書を破棄
+cleanup() {
+    powershell "& '$INSTALL_DIR\eSignerCKATool.exe' unload"
+}
+trap cleanup EXIT
 
 # 指定ファイルに署名する
 function codesign() {
@@ -74,6 +80,3 @@ ls $target_file_glob | while read -r target_file; do
         codesign "$target_file"
     fi
 done
-
-# 証明書を破棄
-powershell "& '$INSTALL_DIR\eSignerCKATool.exe' unload"
