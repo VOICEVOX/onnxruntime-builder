@@ -1,10 +1,8 @@
 name: actionlint
 
 on:
-  push:
-    branches:
-      - '**'
-  pull_request:
+  - push
+  - pull_request
 
 jobs:
   actionlint:
