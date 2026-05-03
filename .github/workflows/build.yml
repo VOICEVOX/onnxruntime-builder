@@ -994,6 +994,8 @@ jobs:
   set-tag-name:
     needs: [config, create-draft-release, build-spec-table]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Set the tag name
         if: env.RELEASE == 'true'
