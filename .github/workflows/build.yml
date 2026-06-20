@@ -57,6 +57,8 @@ jobs:
   create-draft-release:
     needs: config
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       # `RELEASE`がtrueなら、GitHub REST APIの`Release`オブジェクトの一部。falseならnull。
       release: ${{ steps.create-draft-release.outputs.release || 'null' }}
@@ -102,6 +104,8 @@ jobs:
 
   build-onnxruntime:
     needs: create-draft-release
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -865,6 +869,8 @@ jobs:
 
   get-terms:
     runs-on: ubuntu-22.04
+    permissions:
+      contents: write
     environment: ${{ inputs.target == 'voicevox_onnxruntime' && 'production' || '' }}
 
     steps:
