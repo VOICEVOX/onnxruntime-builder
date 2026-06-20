@@ -104,8 +104,6 @@ jobs:
 
   build-onnxruntime:
     needs: create-draft-release
-    permissions:
-      contents: write
     strategy:
       fail-fast: false
       matrix:
