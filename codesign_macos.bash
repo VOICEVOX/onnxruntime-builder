@@ -5,11 +5,11 @@
 
 set -eu
 
-if [ ! -v APPLE_P12_BASE64 ]; then # .p12証明書のbase64エンコードされた内容
+if [ -z "${APPLE_P12_BASE64:-}" ]; then # .p12証明書のbase64エンコードされた内容
     echo "APPLE_P12_BASE64が未定義です"
     exit 1
 fi
-if [ ! -v APPLE_P12_PASSWORD ]; then # .p12証明書のパスワード
+if [ -z "${APPLE_P12_PASSWORD:-}" ]; then # .p12証明書のパスワード
     echo "APPLE_P12_PASSWORDが未定義です"
     exit 1
 fi
