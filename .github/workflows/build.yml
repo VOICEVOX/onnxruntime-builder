@@ -124,6 +124,16 @@ jobs:
               --compile_no_warning_as_error
               --use_dml
             release_config: Release
+          # TODO: `openvino_url`（OpenVINOツールキットのアーカイブ）とバージョンはCIでの検証が必要。
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-openvino
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            openvino_url: https://storage.openvinotoolkit.org/repositories/openvino/packages/2025.4/windows/openvino_toolkit_windows_2025.4.1.0.20426.82bbf0292c5_x86_64.zip
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_openvino AUTO:GPU,CPU
+            release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-webgpu
             os: windows-2022
             spec_os: Windows
@@ -183,6 +193,17 @@ jobs:
             gcc_version: "12"
             build_opts: |-
               --compile_no_warning_as_error
+            release_config: Release
+          # TODO: `openvino_url`（OpenVINOツールキットのアーカイブ）とバージョンはCIでの検証が必要。
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-openvino
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            openvino_url: https://storage.openvinotoolkit.org/repositories/openvino/packages/2025.4/linux/openvino_toolkit_ubuntu22_2025.4.1.0.20426.82bbf0292c5_x86_64.tgz
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_openvino AUTO:GPU,CPU
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
             os: ubuntu-22.04
@@ -454,6 +475,31 @@ jobs:
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
+      # NOTE: OpenVINOツールキットを展開し、build.py の `--use_openvino` が参照する
+      # 環境変数を設定する。インストール方法（アーカイブURL/バージョン/setupvarsの要否や
+      # PATHへのruntime/bin追加）はCIでの実地検証が必要。
+      - name: Set up OpenVINO
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.openvino_url
+        run: |
+          download_dir=$RUNNER_TEMP/openvino
+          mkdir -p "$download_dir"
+          if [ ${{ runner.os }} = Windows ]; then
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.openvino_url }}" > "$download_dir/openvino.zip"
+            unzip -q "$download_dir/openvino.zip" -d "$download_dir"
+          else
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.openvino_url }}" > "$download_dir/openvino.tgz"
+            tar xf "$download_dir/openvino.tgz" -C "$download_dir"
+          fi
+
+          ov_dir=$(find "$download_dir" -maxdepth 1 -type d -name 'openvino_toolkit_*')
+          if [ ${{ runner.os }} = Windows ]; then
+            ov_dir=$(cygpath -wa "$ov_dir")
+          else
+            ov_dir=$(realpath "$ov_dir")
+          fi
+          echo "INTEL_OPENVINO_DIR=$ov_dir" >> "$GITHUB_ENV"
+          echo "OpenVINO_DIR=$ov_dir/runtime/cmake" >> "$GITHUB_ENV"
+
       - name: Configure to use latest Android NDK
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
         run: |
@@ -660,6 +706,14 @@ jobs:
               cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
                 ./build/${{ matrix.artifact_name }}/lib/
             fi
+            # OpenVINO EP のプロバイダDLL（providerは実行時ロードのため.libは無い）。
+            # TODO: 実行に必要な OpenVINO ランタイム再頒布物（openvino.dll,
+            #       openvino_intel_gpu_plugin.dll, tbb 等。INTEL_OPENVINO_DIR/runtime/bin）
+            #       の同梱もCIで要確認。
+            if [ -f ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_openvino.dll ]; then
+              cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{openvino,shared}.dll \
+                ./build/${{ matrix.artifact_name }}/lib/
+            fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
               -r "$(pwd)/build" \
@@ -724,6 +778,7 @@ jobs:
               --use_cuda) use_cuda=1 ;;
               --use_dml) use_dml=1 ;;
               --use_webgpu) use_webgpu=1 ;;
+              --use_openvino) use_openvino=1 ;;
             esac
           done
 
@@ -735,6 +790,7 @@ jobs:
               "devices": [
                 ("CUDA" | select($use_cuda == "1")),
                 ("DirectML" | select($use_dml == "1")),
+                ("OpenVINO" | select($use_openvino == "1")),
                 ("WebGPU" | select($use_webgpu == "1")),
                 "CPU"
               ] | join("/")
@@ -745,6 +801,7 @@ jobs:
             --arg use_cuda "$use_cuda" \
             --arg use_dml "$use_dml" \
             --arg use_webgpu "$use_webgpu" \
+            --arg use_openvino "$use_openvino" \
             > "$RELEASE_NAME.json"
 
       - name: Upload specifications
