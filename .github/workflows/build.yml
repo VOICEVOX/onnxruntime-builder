@@ -136,7 +136,7 @@ jobs:
             os: windows-2022
             spec_os: Windows
             spec_arch: x86_64
-            cuda_version: 12.4.1
+            cuda_version: 12.8.1
             # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
             cuda_sub_packages: |
               ["cudart",
@@ -152,11 +152,11 @@ jobs:
                "cusolver_dev",
                "cusparse_dev",
                "visual_studio_integration"]
-            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-8.9.7.29_cuda12-archive.zip
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --cuda_version 12.4 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
+              --cuda_version 12.8 # WindowsではCUDAのディレクトリを見つけ出すのに必要（1.16.3時点）
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
@@ -189,9 +189,9 @@ jobs:
             spec_os: Linux
             spec_arch: x86_64
             gcc_version: "12"
-            cuda_version: 12.4.1
+            cuda_version: 12.8.1
             cuda_sub_packages: "[]" # デフォルト
-            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.9.7.29_cuda12-archive.tar.xz
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
@@ -419,7 +419,7 @@ jobs:
 
       - name: Set up CUDA
         if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
-        uses: Jimver/cuda-toolkit@9b295696791d75d658d8de64c4a85097ad8abeaf # v0.2.16
+        uses: Jimver/cuda-toolkit@3d45d157f327c09c04b50ee6ccdea2d9d017ec76 # v0.2.35
         with:
           cuda: ${{ matrix.cuda_version }}
           sub-packages: ${{ matrix.cuda_sub_packages }}
