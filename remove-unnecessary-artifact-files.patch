@@ -1,6 +1,6 @@
 # 配布物から、不要なCMake設定、pkg-config設定、dSYM、デバッグ情報を除外する。
 # 外部providerを含まないLinux版では、provider用共有ライブラリも除外する。
-# ONNX Runtimeを更新するときも、同じ除外とstripを維持する。
+# バージョン更新するときも同じ除外とstripを維持する。
 
 diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/github/linux/copy_strip_binary.sh
 --- a/tools/ci_build/github/linux/copy_strip_binary.sh
