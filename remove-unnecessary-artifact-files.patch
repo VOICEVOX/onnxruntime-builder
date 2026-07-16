@@ -5,7 +5,7 @@
 diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/github/linux/copy_strip_binary.sh
 --- a/tools/ci_build/github/linux/copy_strip_binary.sh
 +++ b/tools/ci_build/github/linux/copy_strip_binary.sh
-@@ -22,17 +22,39 @@
+@@ -22,16 +22,28 @@
  rmdir $ARTIFACT_NAME/include/onnxruntime
  # Do not ship onnx_test_runner
  rm -rf $ARTIFACT_NAME/bin
@@ -14,7 +14,6 @@ diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/g
  then
 -    dsymutil $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME -o $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME.dSYM
 -    strip -S $BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME
-+    echo "Strip Apple shared library."
 +    strip -Sx "$BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME"
      # copy the CoreML EP header for macOS build (libs with .dylib ext)
      cp $SOURCE_DIR/include/onnxruntime/core/providers/coreml/coreml_provider_factory.h  $BINARY_DIR/$ARTIFACT_NAME/include
@@ -24,23 +23,14 @@ diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/g
 +    if [[ $LIB_NAME == *.so.* ]]
 +    then
 +        LIBRARY_BASENAME=${LIB_NAME%%.so.*}
-+        PROVIDER_SHARED_LIBRARY="$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_shared.so"
-+        PROVIDER_LIBRARIES=(
-+            "$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_"*.so
-+        )
-+        if [[ ${#PROVIDER_LIBRARIES[@]} -eq 1 ]]
++        PROVIDER_LIBRARIES=("$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_"*.so)
++        "${ARCH_PREFIX}strip" -s \
++            "$BINARY_DIR/$ARTIFACT_NAME/lib/$LIB_NAME" \
++            "${PROVIDER_LIBRARIES[@]}"
++        if ((${#PROVIDER_LIBRARIES[@]} == 1))
 +        then
-+            rm "$PROVIDER_SHARED_LIBRARY"
++            rm "$BINARY_DIR/$ARTIFACT_NAME/lib/${LIBRARY_BASENAME}_providers_shared.so"
 +        fi
-+
-+        echo "Strip Linux shared libraries."
-+        for SHARED_LIBRARY in "$BINARY_DIR/$ARTIFACT_NAME/lib/"*.so*
-+        do
-+            if [[ -f "$SHARED_LIBRARY" && ! -L "$SHARED_LIBRARY" ]]
-+            then
-+                "${ARCH_PREFIX}strip" -s "$SHARED_LIBRARY"
-+            fi
-+        done
 +    fi
  fi
 +rm -r \
@@ -48,4 +38,3 @@ diff --git a/tools/ci_build/github/linux/copy_strip_binary.sh b/tools/ci_build/g
 +    "$BINARY_DIR/$ARTIFACT_NAME/lib/pkgconfig"
  
  # copy the README, licence and TPN
- cp $SOURCE_DIR/README.md $BINARY_DIR/$ARTIFACT_NAME/README.md
