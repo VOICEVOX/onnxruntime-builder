@@ -546,6 +546,14 @@ jobs:
           name: log_${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}_*.txt.gpg
 
+      # Organize artifactのcopy_strip_binary.shがarm-linux-gnueabihf-stripを使うが、
+      # 依存関係のインストールはキャッシュヒット時にスキップされるため、ここで別途用意する。
+      - name: Install binutils for artifact stripping on Linux
+        if: startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binutils"$ARCH_SUFFIX"
+
       - name: Organize artifact
         run: |
           if [ ${{ runner.os }} != Windows ]; then
