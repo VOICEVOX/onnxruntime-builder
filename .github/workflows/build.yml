@@ -165,8 +165,8 @@ jobs:
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip
             # TensorRT 10.9はONNX Runtime本家のTensorRT EP要件表（main/1.22時点でCUDA 12.0-12.8向けにTensorRT 10.9を明記）に基づく選定。
             # 1.23系向けの正式な組み合わせ表は本家ドキュメントに明記が見つからなかったため要確認。
-            # URLはNVIDIAのredistディレクトリ構造からの推定であり、実ファイル名（パッチバージョン等）は要確認。
-            tensorrt_url: https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/zips/TensorRT-10.9.0.34.Windows.win10.cuda-12.8.zip
+            # URLは認証なしでのダウンロード可否をcurlで確認済み(2026-08-01)。
+            tensorrt_url: https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/zip/TensorRT-10.9.0.34.Windows.win10.cuda-12.8.zip
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
@@ -221,7 +221,7 @@ jobs:
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz
             # TensorRT 10.9はONNX Runtime本家のTensorRT EP要件表（main/1.22時点でCUDA 12.0-12.8向けにTensorRT 10.9を明記）に基づく選定。
             # 1.23系向けの正式な組み合わせ表は本家ドキュメントに明記が見つからなかったため要確認。
-            # URLはNVIDIAのredistディレクトリ構造からの推定であり、実ファイル名（パッチバージョン等）は要確認。
+            # URLは認証なしでのダウンロード可否をcurlで確認済み(2026-08-01)。
             tensorrt_url: https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/tars/TensorRT-10.9.0.34.Linux.x86_64-gnu.cuda-12.8.tar.gz
             build_opts: |-
               --compile_no_warning_as_error
