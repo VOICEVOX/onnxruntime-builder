@@ -224,7 +224,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
+              # NOTE: aarch64ではCPU EPのfp16_conv.ccがcontrib opsのGetFusedActivationAttrに依存しており、--disable_contrib_opsを付けるとリンクエラーになるため、このターゲットでは付けない
               --cmake_extra_defines
               "CMAKE_CUDA_ARCHITECTURES=87;90" # 87: Jetson Orin / 90: Grace。それぞれSASS+PTXを生成
             release_config: Release
