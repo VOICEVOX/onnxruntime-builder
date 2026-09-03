@@ -226,7 +226,7 @@ jobs:
               --use_cuda
               # NOTE: aarch64ではCPU EPのfp16_conv.ccがcontrib opsのGetFusedActivationAttrに依存しており、--disable_contrib_opsを付けるとリンクエラーになるため、このターゲットでは付けない
               --cmake_extra_defines
-              "CMAKE_CUDA_ARCHITECTURES=87;90" # 87: Jetson Orin / 90: Grace。それぞれSASS+PTXを生成
+              "CMAKE_CUDA_ARCHITECTURES=87;90;90-virtual" # ORT v1.23.2のcuda_configuration.cmakeにより87-real;90a-real;90-virtualへ正規化される: sm_87(Jetson Orin)とsm_90a(GH200等)はSASS、それより新しいGPU(Thor/GB200等)はPTX 9.0からのJITで動作
               "CMAKE_CXX_FLAGS=-I${CUDA_HOME}/include/cccl" # CUDA 13はCCCL(libcu++/CUB/Thrust)のヘッダをinclude/cccl/へ移動した。nvccは自動で解決するがホストコンパイラは解決できず、ホスト側でcuda/std/*をincludeするcontrib_ops/cuda/llm/cutlass_heuristic.cc等がビルドできない(ORT v1.23.2のCMakeは未対応)
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
