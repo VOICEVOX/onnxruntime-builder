@@ -99,6 +99,8 @@ jobs:
             spec_arch: x86_64
             build_opts: |-
               --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
             os: windows-2022
@@ -107,6 +109,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_dml
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-webgpu
             os: windows-2022
@@ -115,6 +119,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
             os: windows-2022
@@ -141,6 +147,8 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
@@ -149,6 +157,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --x86
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-webgpu
             os: ubuntu-22.04
@@ -158,6 +168,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
             os: ubuntu-22.04
@@ -166,6 +178,8 @@ jobs:
             gcc_version: "12"
             build_opts: |-
               --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
             os: ubuntu-22.04
@@ -179,6 +193,8 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
@@ -192,6 +208,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_SYSTEM_NAME=Linux
               CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
             os: ubuntu-22.04-arm
@@ -201,6 +218,8 @@ jobs:
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
             os: ubuntu-22.04-arm
@@ -211,6 +230,8 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
             os: macos-14
@@ -221,6 +242,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=arm64
               CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
             os: macos-15-intel
@@ -231,6 +253,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=x86_64
               CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
             os: macos-14
@@ -242,6 +265,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=arm64
               CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-webgpu
             os: macos-15-intel
@@ -253,6 +277,7 @@ jobs:
               --cmake_extra_defines
               CMAKE_OSX_ARCHITECTURES=x86_64
               CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
             os: ubuntu-22.04
@@ -262,6 +287,8 @@ jobs:
               --compile_no_warning_as_error
               --android
               --android_abi x86_64
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
             os: ubuntu-22.04
@@ -271,6 +298,8 @@ jobs:
               --compile_no_warning_as_error
               --android
               --android_abi arm64-v8a
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
             os: macos-14
@@ -284,6 +313,8 @@ jobs:
               --apple_sysroot iphoneos
               --osx_arch arm64
               --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
             os: macos-14
@@ -297,6 +328,8 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch arm64
               --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release-iphonesimulator
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
             os: macos-15-intel
@@ -310,6 +343,8 @@ jobs:
               --apple_sysroot iphonesimulator
               --osx_arch x86_64
               --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release-iphonesimulator
 
     env:
