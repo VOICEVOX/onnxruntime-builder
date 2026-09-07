@@ -184,6 +184,8 @@ jobs:
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
               --cmake_extra_defines
+              # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
+              # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
               "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
