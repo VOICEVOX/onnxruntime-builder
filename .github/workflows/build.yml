@@ -384,8 +384,7 @@ jobs:
     steps:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          # NOTE: Windows ARM64用のPython3.10が配布されていないので代わりに3.11をインストールする
-          python-version: ${{ runner.os == 'Windows' && runner.arch == 'ARM64' && '3.11' || '3.10' }}
+          python-version: "3.12"
 
       - name: Version check (semver)
         run: |
