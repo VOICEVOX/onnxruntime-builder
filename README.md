@@ -5,9 +5,13 @@ VOICEVOX COREで利用するonnxruntimeのビルドを行うリポジトリ
 
 [`build`ワークフロー]をworkflow_dispatchで起動。
 
+WebGPU版は動作と速度の検証が完了するまで、`build_webgpu=true`を指定した場合のみビルドし、GitHub Actionsのartifactへアップロードする。
+`build_webgpu`の既定値は`false`。
+
 ## リリース
 
 1. [`build`ワークフロー]を`release=true`で起動してdraft releaseを作成。
+   WebGPU版を含める場合は`build_webgpu=true`も指定する。
 2. releaseのdraftを解除する。
 
 ## 再リリース
