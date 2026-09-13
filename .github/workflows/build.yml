@@ -55,389 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
-      matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
-      - name: Generate matrix
-        id: generate-matrix
-        env:
-          BUILD_WEBGPU: ${{ github.event_name == 'workflow_dispatch' && inputs.build_webgpu }}
-        run: |
-          matrix=$(
-            jq -cn \
-              --arg target "$TARGET_LIBRARY" \
-              --argjson build_webgpu "$BUILD_WEBGPU" \
-              '
-                [
-                  # TODO: 外せる`--compile_no_warning_as_error`は外す
-                  {
-                    artifact_name: ($target + "-win-x64"),
-                    os: "windows-2022",
-                    spec_os: "Windows",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-x64-dml"),
-                    os: "windows-2022",
-                    spec_os: "Windows",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_dml",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-x64-webgpu"),
-                    os: "windows-2022",
-                    spec_os: "Windows",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_webgpu",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-x64-cuda"),
-                    os: "windows-2022",
-                    spec_os: "Windows",
-                    spec_arch: "x86_64",
-                    cuda_version: "12.8.1",
-                    # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
-                    cuda_sub_packages: (([
-                      "[\"cudart\",",
-                      " \"cuobjdump\",",
-                      " \"nvrtc\",",
-                      " \"nvrtc_dev\",",
-                      " \"nvcc\",",
-                      " \"nvdisasm\",",
-                      " \"thrust\",",
-                      " \"cublas_dev\",",
-                      " \"cufft_dev\",",
-                      " \"curand_dev\",",
-                      " \"cusolver_dev\",",
-                      " \"cusparse_dev\",",
-                      " \"visual_studio_integration\"]"
-                    ] | join("\n")) + "\n"),
-                    cudnn_url: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_cuda",
-                      "--disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。",
-                      "--cmake_extra_defines",
-                      "# 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。",
-                      "# ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117",
-                      "\"CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual\"",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-x86"),
-                    os: "windows-2022",
-                    spec_os: "Windows",
-                    spec_arch: "x86",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--x86",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-arm64"),
-                    os: "windows-11-arm",
-                    spec_os: "Windows",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-arm64-dml"),
-                    os: "windows-11-arm",
-                    spec_os: "Windows",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_dml",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-win-arm64-webgpu"),
-                    os: "windows-11-arm",
-                    spec_os: "Windows",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_webgpu",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-x64-webgpu"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Linux",
-                    spec_arch: "x86_64",
-                    gcc_version: "12",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_webgpu",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-x64"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Linux",
-                    spec_arch: "x86_64",
-                    gcc_version: "12",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-x64-cuda"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Linux",
-                    spec_arch: "x86_64",
-                    gcc_version: "12",
-                    cuda_version: "12.8.1",
-                    cuda_sub_packages: "[]", # デフォルト
-                    cudnn_url: "https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_cuda",
-                      "--disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。",
-                      "--cmake_extra_defines",
-                      "# 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。",
-                      "# ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117",
-                      "\"CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual\"",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-armhf"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Linux",
-                    spec_arch: "ARMv7",
-                    gcc_version: "12",
-                    linux_cross_arch: "arm-linux-gnueabihf",
-                    symlink_workaround: true,
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "CMAKE_SYSTEM_NAME=Linux",
-                      "CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-arm64"),
-                    os: "ubuntu-22.04-arm",
-                    spec_os: "Linux",
-                    spec_arch: "AArch64",
-                    gcc_version: "12",
-                    symlink_workaround: true,
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-linux-arm64-webgpu"),
-                    os: "ubuntu-22.04-arm",
-                    spec_os: "Linux",
-                    spec_arch: "AArch64",
-                    gcc_version: "12",
-                    symlink_workaround: true,
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--use_webgpu",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-osx-arm64"),
-                    os: "macos-14",
-                    spec_os: "macOS",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "CMAKE_OSX_ARCHITECTURES=arm64",
-                      "CMAKE_OSX_DEPLOYMENT_TARGET=13.3",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-osx-x86_64"),
-                    os: "macos-15-intel",
-                    spec_os: "macOS",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "CMAKE_OSX_ARCHITECTURES=x86_64",
-                      "CMAKE_OSX_DEPLOYMENT_TARGET=13.3",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-osx-arm64-webgpu"),
-                    os: "macos-14",
-                    spec_os: "macOS",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--use_webgpu",
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "CMAKE_OSX_ARCHITECTURES=arm64",
-                      "CMAKE_OSX_DEPLOYMENT_TARGET=13.3",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-osx-x86_64-webgpu"),
-                    os: "macos-15-intel",
-                    spec_os: "macOS",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--use_webgpu",
-                      "--compile_no_warning_as_error",
-                      "--cmake_extra_defines",
-                      "CMAKE_OSX_ARCHITECTURES=x86_64",
-                      "CMAKE_OSX_DEPLOYMENT_TARGET=13.3",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-android-x64"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Android",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--android",
-                      "--android_abi x86_64",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-android-arm64"),
-                    os: "ubuntu-22.04",
-                    spec_os: "Android",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--android",
-                      "--android_abi arm64-v8a",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release"
-                  },
-                  {
-                    artifact_name: ($target + "-ios-arm64"),
-                    os: "macos-14",
-                    spec_os: "iOS",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--skip_tests",
-                      "--use_xcode",
-                      "--ios",
-                      "--apple_sysroot iphoneos",
-                      "--osx_arch arm64",
-                      "--apple_deploy_target 16.0",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release-iphoneos"
-                  },
-                  {
-                    artifact_name: ($target + "-ios-sim-arm64"),
-                    os: "macos-14",
-                    spec_os: "iOS",
-                    spec_arch: "AArch64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--skip_tests",
-                      "--use_xcode",
-                      "--ios",
-                      "--apple_sysroot iphonesimulator",
-                      "--osx_arch arm64",
-                      "--apple_deploy_target 16.0",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release-iphonesimulator"
-                  },
-                  {
-                    artifact_name: ($target + "-ios-sim-x86_64"),
-                    os: "macos-15-intel",
-                    spec_os: "iOS",
-                    spec_arch: "x86_64",
-                    build_opts: [
-                      "--compile_no_warning_as_error",
-                      "--skip_tests",
-                      "--use_xcode",
-                      "--ios",
-                      "--apple_sysroot iphonesimulator",
-                      "--osx_arch x86_64",
-                      "--apple_deploy_target 16.0",
-                      "--cmake_extra_defines",
-                      "onnxruntime_BUILD_UNIT_TESTS=OFF"
-                    ] | join("\n"),
-                    release_config: "Release-iphonesimulator"
-                  }
-                ]
-                | map(
-                    select(
-                      $build_webgpu
-                      or ([.build_opts | split("\n")[] | select(. == "--use_webgpu")] | length == 0)
-                    )
-                  )
-                | {include: .}
-              '
-          )
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+      - name: Nop
+        run: ':'
 
   # 他のリポジトリとは異なり、既存の同名のtag_nameがあることを許容する。
   # 何故なら本リポジトリではリリースの差し替えを行うため。ゆえにimmutable releaseも使わない。
@@ -472,18 +92,337 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-onnxruntime:
-    needs: [config, create-draft-release]
+    needs: create-draft-release
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.config.outputs.matrix) }}
+      matrix:
+        # TODO: 外せる`--compile_no_warning_as_error`は外す
+        build_webgpu:
+          - ${{ github.event_name == 'workflow_dispatch' && inputs.build_webgpu }}
+        config:
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-dml
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_dml
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-webgpu
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            cuda_version: 12.8.1
+            # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
+            cuda_sub_packages: |
+              ["cudart",
+               "cuobjdump",
+               "nvrtc",
+               "nvrtc_dev",
+               "nvcc",
+               "nvdisasm",
+               "thrust",
+               "cublas_dev",
+               "cufft_dev",
+               "curand_dev",
+               "cusolver_dev",
+               "cusparse_dev",
+               "visual_studio_integration"]
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_cuda
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              --cmake_extra_defines
+              # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
+              # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
+              "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86
+            build_opts: |-
+              --compile_no_warning_as_error
+              --x86
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64-dml
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_dml
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64-webgpu
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-webgpu
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            cuda_version: 12.8.1
+            cuda_sub_packages: "[]" # デフォルト
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_cuda
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
+              --cmake_extra_defines
+              # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
+              # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
+              "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: ARMv7
+            gcc_version: "12"
+            linux_cross_arch: arm-linux-gnueabihf
+            symlink_workaround: true
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_SYSTEM_NAME=Linux
+              CMAKE_SYSTEM_PROCESSOR=armv7l # required for `cpuinfo`
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64
+            os: ubuntu-22.04-arm
+            spec_os: Linux
+            spec_arch: AArch64
+            gcc_version: "12"
+            symlink_workaround: true
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-arm64-webgpu
+            os: ubuntu-22.04-arm
+            spec_os: Linux
+            spec_arch: AArch64
+            gcc_version: "12"
+            symlink_workaround: true
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
+            os: macos-14
+            spec_os: macOS
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=arm64
+              CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64
+            os: macos-15-intel
+            spec_os: macOS
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=x86_64
+              CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
+            os: macos-14
+            spec_os: macOS
+            spec_arch: AArch64
+            build_opts: |-
+              --use_webgpu
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=arm64
+              CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-x86_64-webgpu
+            os: macos-15-intel
+            spec_os: macOS
+            spec_arch: x86_64
+            build_opts: |-
+              --use_webgpu
+              --compile_no_warning_as_error
+              --cmake_extra_defines
+              CMAKE_OSX_ARCHITECTURES=x86_64
+              CMAKE_OSX_DEPLOYMENT_TARGET=13.3
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: true
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-x64
+            os: ubuntu-22.04
+            spec_os: Android
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --android
+              --android_abi x86_64
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-android-arm64
+            os: ubuntu-22.04
+            spec_os: Android
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --android
+              --android_abi arm64-v8a
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
+            os: macos-14
+            spec_os: iOS
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --skip_tests
+              --use_xcode
+              --ios
+              --apple_sysroot iphoneos
+              --osx_arch arm64
+              --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release-iphoneos
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
+            os: macos-14
+            spec_os: iOS
+            spec_arch: AArch64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --skip_tests
+              --use_xcode
+              --ios
+              --apple_sysroot iphonesimulator
+              --osx_arch arm64
+              --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release-iphonesimulator
+            webgpu: false
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-x86_64
+            os: macos-15-intel
+            spec_os: iOS
+            spec_arch: x86_64
+            build_opts: |-
+              --compile_no_warning_as_error
+              --skip_tests
+              --use_xcode
+              --ios
+              --apple_sysroot iphonesimulator
+              --osx_arch x86_64
+              --apple_deploy_target 16.0
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release-iphonesimulator
+            webgpu: false
+        exclude:
+          - build_webgpu: false
+            config:
+              webgpu: true
 
     env:
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
       # suffix usage: "", "-arm-linux-gnueabihf" => "gcc-8", "gcc-8-arm-linux-gnueabihf" (package name)
-      ARCH_PREFIX: "${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}${{ (matrix.linux_cross_arch != '' && '-') || '' }}"
-      ARCH_SUFFIX: "${{ (matrix.linux_cross_arch != '' && '-') || '' }}${{ (matrix.linux_cross_arch != '' && matrix.linux_cross_arch) || '' }}"
+      ARCH_PREFIX: "${{ (matrix.config.linux_cross_arch != '' && matrix.config.linux_cross_arch) || '' }}${{ (matrix.config.linux_cross_arch != '' && '-') || '' }}"
+      ARCH_SUFFIX: "${{ (matrix.config.linux_cross_arch != '' && '-') || '' }}${{ (matrix.config.linux_cross_arch != '' && matrix.config.linux_cross_arch) || '' }}"
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.config.os }}
     permissions:
       contents: write
     environment: ${{ inputs.target == 'voicevox_onnxruntime' && 'production' || '' }}
@@ -505,7 +444,7 @@ jobs:
 
       - name: Dump matrix context
         env:
-          MATRIX_CONTEXT: ${{ toJSON(matrix) }}
+          MATRIX_CONTEXT: ${{ toJSON(matrix.config) }}
         run: echo "$MATRIX_CONTEXT" > matrix.json
 
       - name: Cache build result
@@ -514,11 +453,11 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.config.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Linux' && contains(matrix.build_opts, '--use_cuda')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'Linux' && contains(matrix.config.build_opts, '--use_cuda')
         with:
           tool-cache: false
           large-packages: false
@@ -535,7 +474,7 @@ jobs:
         run: brew install tree
 
       - name: Install and configure build dependencies on Linux
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.config.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -544,19 +483,19 @@ jobs:
               wget \
               qemu-user-binfmt
 
-          if [ -n "${{ matrix.gcc_version }}" ]; then
+          if [ -n "${{ matrix.config.gcc_version }}" ]; then
             sudo apt-get install -y \
-                gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
-                g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+                gcc-${{ matrix.config.gcc_version }}"$ARCH_SUFFIX" \
+                g++-${{ matrix.config.gcc_version }}"$ARCH_SUFFIX"
 
             # Set environment variable CC / CXX
-            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.config.gcc_version }}" >> "$GITHUB_ENV"
+            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.config.gcc_version }}" >> "$GITHUB_ENV"
           fi
 
       # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.config.os, 'ubuntu')
         env:
           CMAKE_VERSION: 3.28.0
         run: |
@@ -570,29 +509,29 @@ jobs:
           sudo bash cmake.sh --skip-license --prefix=/usr/local
 
       - name: Set up CUDA
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.config.cuda_version && matrix.config.cudnn_url
         uses: Jimver/cuda-toolkit@3d45d157f327c09c04b50ee6ccdea2d9d017ec76 # v0.2.35
         with:
-          cuda: ${{ matrix.cuda_version }}
-          sub-packages: ${{ matrix.cuda_sub_packages }}
+          cuda: ${{ matrix.config.cuda_version }}
+          sub-packages: ${{ matrix.config.cuda_sub_packages }}
           method: network
 
       - name: Set `$CUDA_HOME`
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.config.cuda_version && matrix.config.cudnn_url
         run: echo "CUDA_HOME=$CUDA_PATH" >> "$GITHUB_ENV"
 
       - name: Set up cuDNN
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.cudnn_url
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.config.cuda_version && matrix.config.cudnn_url
         run: |
           download_dir=$RUNNER_TEMP/cudnn
           mkdir "$download_dir"
 
           if [ ${{ runner.os }} = Windows ]; then
-            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.zip"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.config.cudnn_url }}" > "$download_dir/cudnn.zip"
             unzip "$download_dir/cudnn.zip" -d "$download_dir"
             rm "$download_dir/cudnn.zip"
           else
-            curl -fL --retry 3 --retry-delay 5 "${{ matrix.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.config.cudnn_url }}" > "$download_dir/cudnn.tar.gz"
             tar xvf "$download_dir/cudnn.tar.gz" -C "$download_dir/"
             rm "$download_dir/cudnn.tar.gz"
           fi
@@ -607,7 +546,7 @@ jobs:
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
       - name: Configure to use latest Android NDK
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.config.os, 'ubuntu') && contains(matrix.config.build_opts, '--android')
         run: |
           # https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2004-Readme.md#environment-variables-2
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
@@ -646,7 +585,7 @@ jobs:
             git remote add private "$PRODUCTION_REPOSITORY_URL"
             git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
             git switch -d FETCH_HEAD
-          ) 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
+          ) 1>>${{ matrix.config.artifact_name }}_stdout.txt 2>>${{ matrix.config.artifact_name }}_stderr.txt
         env:
           PRODUCTION_REPOSITORY_URL: ${{ secrets.PRODUCTION_REPOSITORY_URL }}
 
@@ -660,7 +599,7 @@ jobs:
           find ./builder -name '*.patch' -exec git apply --ignore-whitespace --reject --whitespace=fix --verbose {} +
 
       - name: Configure build environment for cross-compiling on Linux
-        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.config.os, 'ubuntu') && matrix.config.linux_cross_arch
         run: |
           # Required for arm build
           # https://github.com/microsoft/onnxruntime/issues/4189#issuecomment-642528278
@@ -668,18 +607,18 @@ jobs:
           echo 'string(APPEND CMAKE_CXX_FLAGS " -latomic")' >> cmake/CMakeLists.txt
 
           # Prevent Exec Format Error during cross-compiling
-          if ${{ matrix.symlink_workaround }}; then
-            find /usr/${{ matrix.linux_cross_arch }}/lib -name '*.so*' -print0 |
+          if ${{ matrix.config.symlink_workaround }}; then
+            find /usr/${{ matrix.config.linux_cross_arch }}/lib -name '*.so*' -print0 |
               while IFS= read -r -d '' so; do
-                sudo ln -s "$so" /usr/lib/${{ matrix.linux_cross_arch }}/
+                sudo ln -s "$so" /usr/lib/${{ matrix.config.linux_cross_arch }}/
               done
-            sudo ln -s /usr/${{ matrix.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
+            sudo ln -s /usr/${{ matrix.config.linux_cross_arch }}/lib/ld-linux-*.so* /usr/lib/
           fi
 
       - name: Run prepare.bash
         id: prepare
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
-        run: ./prepare.bash 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
+        run: ./prepare.bash 1>>${{ matrix.config.artifact_name }}_stdout.txt 2>>${{ matrix.config.artifact_name }}_stderr.txt
 
       - name: Build ONNX Runtime
         id: build
@@ -692,7 +631,7 @@ jobs:
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
 
           build_opts=(
-          ${{ matrix.build_opts }}
+          ${{ matrix.config.build_opts }}
           )
 
           python ./tools/ci_build/build.py \
@@ -703,8 +642,8 @@ jobs:
             --parallel \
             --build_shared_lib \
             "${build_opts[@]}" \
-            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
-            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.config.artifact_name) }} \
+            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.config.artifact_name) }}
 
       - name: Inspect the build directory for debug
         id: inspect-build-dir
@@ -716,8 +655,8 @@ jobs:
             }
           fi
           tree build \
-            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
-            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+            1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.config.artifact_name) }} \
+            2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.config.artifact_name) }}
 
       - name: Show size of the build directory for debug (before removing unnecessary files)
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
@@ -731,7 +670,7 @@ jobs:
           find ./build/Release -maxdepth 1 '(' -name _deps -o -name testdata ')' -print -exec rm -r {} +
           find ./build/Release -maxdepth 1 '(' -name '*.a' -o -name '*.lib' -not -name onnxruntime.lib ')' -print -delete
           find ./build/Release/CMakeFiles -mindepth 1 -maxdepth 1 -not -name Export -print -exec rm -r {} +
-          find ./build/Release -maxdepth 2 -path '*/${{ matrix.release_config }}/*_test*.app' -print -exec rm -r {} +
+          find ./build/Release -maxdepth 2 -path '*/${{ matrix.config.release_config }}/*_test*.app' -print -exec rm -r {} +
 
       - name: Show size of the build directory for debug (after removing unnecessary files)
         if: steps.cache-build-result.outputs.cache-hit != 'true' && env.TARGET_LIBRARY == 'onnxruntime'
@@ -748,7 +687,7 @@ jobs:
           )
           && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
-          for file in ./${{ matrix.artifact_name }}_{stdout,stderr}.txt; do
+          for file in ./${{ matrix.config.artifact_name }}_{stdout,stderr}.txt; do
             gpg -ef ./builder/log-encryption-pub.asc "$file"
           done
 
@@ -764,13 +703,13 @@ jobs:
           && env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: log_${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_name }}_*.txt.gpg
+          name: log_${{ matrix.config.artifact_name }}
+          path: ${{ matrix.config.artifact_name }}_*.txt.gpg
 
       # Organize artifactのcopy_strip_binary.shがarm-linux-gnueabihf-stripを使うが、
       # 依存関係のインストールはキャッシュヒット時にスキップされるため、ここで別途用意する。
       - name: Install binutils for artifact stripping on Linux
-        if: startsWith(matrix.os, 'ubuntu') && matrix.linux_cross_arch
+        if: startsWith(matrix.config.os, 'ubuntu') && matrix.config.linux_cross_arch
         run: |
           sudo apt-get update
           sudo apt-get install -y binutils"$ARCH_SUFFIX"
@@ -790,10 +729,10 @@ jobs:
           fi
 
           # コピー先artifactを予め削除しておく
-          rm -rf build/${{ matrix.artifact_name }}
+          rm -rf build/${{ matrix.config.artifact_name }}
           rm -rf ./artifact
           # Set library name
-          ARTIFACT_NAME=${{ matrix.artifact_name }}
+          ARTIFACT_NAME=${{ matrix.config.artifact_name }}
           if [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-win-* ]]; then
             # FIXME: この分岐はもう使わないのでは?
             onnxruntime_filename=$TARGET_LIBRARY.dll
@@ -804,38 +743,38 @@ jobs:
           elif [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-osx-* ]] || [[ "$ARTIFACT_NAME" == "$TARGET_LIBRARY"-ios-* ]]; then
             onnxruntime_filename="lib$TARGET_LIBRARY.$ONNXRUNTIME_VERSION.dylib"
           else
-            echo "Unknown target found : ${{ matrix.artifact_name }}"
+            echo "Unknown target found : ${{ matrix.config.artifact_name }}"
             return 1
           fi
           # PDBファイル, Privacy.md, include/は不要なので省く
           if [ ${{ runner.os }} = Windows ]; then
             # https://github.com/microsoft/onnxruntime/blob/v1.16.3/tools/ci_build/github/azure-pipelines/templates/c-api-artifacts-package-and-publish-steps-windows.yml#L34-L72
-            mkdir -p ./build/${{ matrix.artifact_name }}/lib
-            git rev-parse HEAD > ./build/${{ matrix.artifact_name }}/GIT_COMMIT_ID
+            mkdir -p ./build/${{ matrix.config.artifact_name }}/lib
+            git rev-parse HEAD > ./build/${{ matrix.config.artifact_name }}/GIT_COMMIT_ID
             cp ./{LICENSE,README.md,ThirdPartyNotices.txt,VERSION_NUMBER} \
-              ./build/${{ matrix.artifact_name }}/
-            cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
-              ./build/${{ matrix.artifact_name }}/lib/
-            if [ -f ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
-              cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
-                ./build/${{ matrix.artifact_name }}/lib/
+              ./build/${{ matrix.config.artifact_name }}/
+            cp ./build/${{ matrix.config.release_config }}/${{ matrix.config.release_config }}/"$TARGET_LIBRARY".{dll,lib} \
+              ./build/${{ matrix.config.artifact_name }}/lib/
+            if [ -f ./build/${{ matrix.config.release_config }}/${{ matrix.config.release_config }}/"$TARGET_LIBRARY"_providers_cuda.dll ]; then
+              cp ./build/${{ matrix.config.release_config }}/${{ matrix.config.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
+                ./build/${{ matrix.config.artifact_name }}/lib/
             fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
               -r "$(pwd)/build" \
-              -a ${{ matrix.artifact_name }} \
+              -a ${{ matrix.config.artifact_name }} \
               -l "$onnxruntime_filename" \
-              -c ${{ matrix.release_config }} \
+              -c ${{ matrix.config.release_config }} \
               -s "$(pwd)" \
               -t "$(git rev-parse HEAD)"
-            rm -r build/${{ matrix.artifact_name }}/{Privacy.md,include}
+            rm -r build/${{ matrix.config.artifact_name }}/{Privacy.md,include}
           fi
           if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            rm build/${{ matrix.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
-            mv ./VOICEVOX_ORT_TERMS.md build/${{ matrix.artifact_name }}/TERMS.txt
-            mv ./build/third-party-notices.html ./build/${{ matrix.artifact_name }}
+            rm build/${{ matrix.config.artifact_name }}/{README.md,LICENSE,ThirdPartyNotices.txt}
+            mv ./VOICEVOX_ORT_TERMS.md build/${{ matrix.config.artifact_name }}/TERMS.txt
+            mv ./build/third-party-notices.html ./build/${{ matrix.config.artifact_name }}
           fi
-          mv build/${{ matrix.artifact_name }} ./artifact/
+          mv build/${{ matrix.config.artifact_name }} ./artifact/
 
       - name: Code signing (Windows)
         if: runner.os == 'Windows' && inputs.code_signing
@@ -863,21 +802,21 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ${{ matrix.artifact_name }}
+          name: ${{ matrix.config.artifact_name }}
           path: artifact/*
 
       - name: Generate RELEASE_NAME
         run: |
-          echo RELEASE_NAME=${{ matrix.artifact_name }}-"$ONNXRUNTIME_VERSION" >> "$GITHUB_ENV"
+          echo RELEASE_NAME=${{ matrix.config.artifact_name }}-"$ONNXRUNTIME_VERSION" >> "$GITHUB_ENV"
 
       - name: Generate specifications
         run: |
           build_opts=(
-          ${{ matrix.build_opts }}
+          ${{ matrix.config.build_opts }}
           )
 
-          os=${{ matrix.spec_os }}
-          arch=${{ matrix.spec_arch }}
+          os=${{ matrix.config.spec_os }}
+          arch=${{ matrix.config.spec_arch }}
 
           for arg in "${build_opts[@]}"; do
             case "$arg" in
@@ -910,7 +849,7 @@ jobs:
       - name: Upload specifications
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: specs-${{ matrix.artifact_name }}
+          name: specs-${{ matrix.config.artifact_name }}
           path: ${{ env.RELEASE_NAME }}.json
 
       - name: Rearchive artifact
