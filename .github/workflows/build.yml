@@ -29,6 +29,31 @@ on:
         type: boolean
         required: false
         default: false
+      build_windows:
+        description: "Windows版をビルドする"
+        type: boolean
+        required: false
+        default: true
+      build_linux:
+        description: "Linux版をビルドする"
+        type: boolean
+        required: false
+        default: true
+      build_macos:
+        description: "macOS版をビルドする"
+        type: boolean
+        required: false
+        default: true
+      build_android:
+        description: "Android版をビルドする"
+        type: boolean
+        required: false
+        default: true
+      build_ios:
+        description: "iOS版をビルドする"
+        type: boolean
+        required: false
+        default: true
       build_webgpu:
         description: "WebGPU版もビルドする"
         type: boolean
@@ -56,6 +81,18 @@ jobs:
     outputs:
       tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
     steps:
+      - name: Check build targets
+        if: >-
+          github.event_name == 'workflow_dispatch' &&
+          !inputs.build_windows &&
+          !inputs.build_linux &&
+          !inputs.build_macos &&
+          !inputs.build_android &&
+          !inputs.build_ios
+        run: |
+          echo "::error title=ビルド対象エラー::少なくとも1つのOSを選択してください"
+          exit 1
+
       - name: Nop
         run: ':'
 
@@ -93,6 +130,13 @@ jobs:
 
   build-onnxruntime:
     needs: create-draft-release
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      inputs.build_windows ||
+      inputs.build_linux ||
+      inputs.build_macos ||
+      inputs.build_android ||
+      inputs.build_ios
     strategy:
       fail-fast: false
       matrix:
@@ -409,12 +453,37 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release-iphonesimulator
             is_webgpu: false
+        build_windows:
+          - ${{ github.event_name != 'workflow_dispatch' || inputs.build_windows }}
+        build_linux:
+          - ${{ github.event_name != 'workflow_dispatch' || inputs.build_linux }}
+        build_macos:
+          - ${{ github.event_name != 'workflow_dispatch' || inputs.build_macos }}
+        build_android:
+          - ${{ github.event_name != 'workflow_dispatch' || inputs.build_android }}
+        build_ios:
+          - ${{ github.event_name != 'workflow_dispatch' || inputs.build_ios }}
         build_webgpu:
           - ${{ github.event_name == 'workflow_dispatch' && inputs.build_webgpu }}
         exclude:
           - build_webgpu: false
             config:
               is_webgpu: true
+          - build_windows: false
+            config:
+              spec_os: Windows
+          - build_linux: false
+            config:
+              spec_os: Linux
+          - build_macos: false
+            config:
+              spec_os: macOS
+          - build_android: false
+            config:
+              spec_os: Android
+          - build_ios: false
+            config:
+              spec_os: iOS
 
     env:
       # prefix usage: "", "arm-linux-gnueabihf-" => "gcc-8", "arm-linux-gnueabihf-gcc-8" (command name)
@@ -867,6 +936,7 @@ jobs:
 
   build-xcframework:
     needs: [create-draft-release, build-onnxruntime]
+    if: github.event_name != 'workflow_dispatch' || inputs.build_ios
     runs-on: macos-14
     permissions:
       contents: write
@@ -1001,6 +1071,25 @@ jobs:
 
   build-spec-table:
     needs: [config, create-draft-release, build-onnxruntime, build-xcframework, get-terms]
+    if: |
+      always() &&
+      needs.config.result == 'success' &&
+      needs.create-draft-release.result == 'success' &&
+      needs.build-onnxruntime.result == 'success' &&
+      needs.get-terms.result == 'success' &&
+      (
+        (
+          (
+            github.event_name != 'workflow_dispatch' || inputs.build_ios
+          ) &&
+          needs.build-xcframework.result == 'success'
+        ) ||
+        (
+          github.event_name == 'workflow_dispatch' &&
+          inputs.build_ios == false &&
+          needs.build-xcframework.result == 'skipped'
+        )
+      )
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -1051,6 +1140,17 @@ jobs:
             cat <<EOF
             </tbody>
           </table>
+          EOF
+          )
+          tee release-notes.md >&2 <<< "$release_notes"
+
+      - name: Append XCFramework release notes
+        if: needs.build-xcframework.result == 'success'
+        env:
+          XCFRAMEWORK_RELEASE_NAME: ${{ needs.build-xcframework.outputs.release-name }}
+        run: |
+          release_notes=$(
+            cat <<EOF
 
           ## XCFramework
 
@@ -1068,19 +1168,27 @@ jobs:
                 <td>iOS</td>
                 <td>AArch64/x86_64</td>
                 <td>CPU</td>
-                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/${{ needs.config.outputs.tag }}/${{ needs.build-xcframework.outputs.release-name }}.zip">${{ needs.build-xcframework.outputs.release-name }}.zip</a></td>
+                <td><a href="https://github.com/$GITHUB_REPOSITORY/releases/download/${{ needs.config.outputs.tag }}/$XCFRAMEWORK_RELEASE_NAME.zip">$XCFRAMEWORK_RELEASE_NAME.zip</a></td>
               </tr>
             </tbody>
           </table>
           EOF
           )
-          if [ "$TARGET_LIBRARY" = voicevox_onnxruntime ]; then
-            release_notes+=$'\n\n' # NOTE: 2行なのはGFMで見た目が崩れるのを防ぐため
-            release_notes+='<pre data-voicevox-onnxruntime-terms><code>'
-            release_notes+=$(< ./VOICEVOX_ORT_TERMS.md)$'\n'
-            release_notes+=$'</code></pre>\n'
-          fi
-          tee release-notes.md >&2 <<< "$release_notes"
+          printf '%s\n' "$release_notes" >> release-notes.md
+
+      - name: Append terms of use
+        if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
+        run: |
+          # NOTE: 2行なのはGFMで見た目が崩れるのを防ぐため
+          release_notes=$(
+            cat <<EOF
+
+          <pre data-voicevox-onnxruntime-terms><code>
+          EOF
+          )
+          release_notes+=$(< ./VOICEVOX_ORT_TERMS.md)$'\n'
+          release_notes+=$'</code></pre>\n'
+          printf '%s\n' "$release_notes" >> release-notes.md
 
       - name: Update release notes
         if: env.RELEASE == 'true'
