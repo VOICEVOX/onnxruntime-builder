@@ -192,6 +192,40 @@ jobs:
               --cmake_extra_defines
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: Arm64EC
+            build_opts: |-
+              --compile_no_warning_as_error
+              --arm64ec
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec-dml
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: Arm64EC
+            build_opts: |-
+              --compile_no_warning_as_error
+              --arm64ec
+              --use_dml
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec-webgpu
+            os: windows-11-arm
+            spec_os: Windows
+            spec_arch: Arm64EC
+            build_opts: |-
+              --compile_no_warning_as_error
+              --arm64ec
+              --use_webgpu
+              --cmake_extra_defines
+              onnxruntime_BUILD_UNIT_TESTS=OFF
+              "LLVM_TABLEGEN=$GITHUB_WORKSPACE/Windows_WebGPU_BuildTools/llvm-tblgen.exe"
+              "CLANG_TABLEGEN=$GITHUB_WORKSPACE/Windows_WebGPU_BuildTools/clang-tblgen.exe"
+            release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-webgpu
             os: ubuntu-22.04
             spec_os: Linux
@@ -599,6 +633,34 @@ jobs:
           build_opts=(
           ${{ matrix.build_opts }}
           )
+
+          if ${{ endsWith(matrix.artifact_name, '-win-arm64ec-webgpu') }}; then
+            # arm64ec-webgputターゲットでビルドすると`llvm-tblgen.exe`と`clang-tblgen.exe`のビルドに失敗する。
+            # これを回避するために事前にarm64ターゲットで`llvm-tblgen.exe`と`clang-tblgen.exe`のみをビルドしてarm64ecビルドでそれを使う。
+            # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/tools/ci_build/github/azure-pipelines/stages/nodejs-win-packaging-stage.yml#L92-L106
+            python ./tools/ci_build/build.py \
+              --build_dir ./build \
+              --config Release \
+              --update \
+              --parallel \
+              --build_shared_lib \
+              --compile_no_warning_as_error \
+              --use_webgpu \
+              1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
+              2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+
+            cmake --build ./build/Release \
+              --config Release \
+              --target llvm-tblgen clang-tblgen \
+              1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
+              2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+
+            mkdir ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/llvm-tblgen.exe ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/clang-tblgen.exe ./Windows_WebGPU_BuildTools
+
+            rm -rf ./build
+          fi
 
           python ./tools/ci_build/build.py \
             --build_dir ./build \
