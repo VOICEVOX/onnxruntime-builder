@@ -153,6 +153,37 @@ jobs:
               "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64-cuda-trt
+            os: windows-2022
+            spec_os: Windows
+            spec_arch: x86_64
+            cuda_version: 12.8.1
+            # Windowsの場合デフォルトのパッケージ群では不十分であるため、必要そうなパッケージを指定する。ただしいくつかは不要かもしれない
+            cuda_sub_packages: |
+              ["cudart",
+               "cuobjdump",
+               "nvrtc",
+               "nvrtc_dev",
+               "nvcc",
+               "nvdisasm",
+               "thrust",
+               "cublas_dev",
+               "cufft_dev",
+               "curand_dev",
+               "cusolver_dev",
+               "cusparse_dev",
+               "visual_studio_integration"]
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/windows-x86_64/cudnn-windows-x86_64-9.8.0.87_cuda12-archive.zip
+            # TensorRT 10.9はONNX Runtime本家のTensorRT EP要件表（main/1.22時点でCUDA 12.0-12.8向けにTensorRT 10.9を明記）に基づく選定。
+            # 1.23系向けの正式な組み合わせ表は本家ドキュメントに明記が見つからなかったため要確認。
+            # URLは認証なしでのダウンロード可否をcurlで確認済み(2026-08-01)。
+            tensorrt_url: https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/zip/TensorRT-10.9.0.34.Windows.win10.cuda-12.8.zip
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_cuda
+              --use_tensorrt
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+            release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
             os: windows-2022
             spec_os: Windows
@@ -230,6 +261,24 @@ jobs:
               # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
               "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
               onnxruntime_BUILD_UNIT_TESTS=OFF
+            release_config: Release
+          - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-cuda-trt
+            os: ubuntu-22.04
+            spec_os: Linux
+            spec_arch: x86_64
+            gcc_version: "12"
+            cuda_version: 12.8.1
+            cuda_sub_packages: "[]" # デフォルト
+            cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz
+            # TensorRT 10.9はONNX Runtime本家のTensorRT EP要件表（main/1.22時点でCUDA 12.0-12.8向けにTensorRT 10.9を明記）に基づく選定。
+            # 1.23系向けの正式な組み合わせ表は本家ドキュメントに明記が見つからなかったため要確認。
+            # URLは認証なしでのダウンロード可否をcurlで確認済み(2026-08-01)。
+            tensorrt_url: https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/10.9.0/tars/TensorRT-10.9.0.34.Linux.x86_64-gnu.cuda-12.8.tar.gz
+            build_opts: |-
+              --compile_no_warning_as_error
+              --use_cuda
+              --use_tensorrt
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
             os: ubuntu-22.04
@@ -511,6 +560,33 @@ jobs:
 
           echo "CUDNN_HOME=$cudnn_path" >> "$GITHUB_ENV"
 
+      # `--use_tensorrt`を有効にするビルドのみ、TensorRT SDKを展開して`TENSORRT_HOME`を設定する。
+      # ONNX Runtimeのbuild.pyは`--tensorrt_home`未指定時、環境変数`TENSORRT_HOME`をcuDNNの`CUDNN_HOME`と同様の流儀で参照する。
+      - name: Set up TensorRT
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.cuda_version && matrix.tensorrt_url
+        run: |
+          download_dir=$RUNNER_TEMP/tensorrt
+          mkdir "$download_dir"
+
+          if [ ${{ runner.os }} = Windows ]; then
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.tensorrt_url }}" > "$download_dir/tensorrt.zip"
+            unzip "$download_dir/tensorrt.zip" -d "$download_dir"
+            rm "$download_dir/tensorrt.zip"
+          else
+            curl -fL --retry 3 --retry-delay 5 "${{ matrix.tensorrt_url }}" > "$download_dir/tensorrt.tar.gz"
+            tar xvf "$download_dir/tensorrt.tar.gz" -C "$download_dir/"
+            rm "$download_dir/tensorrt.tar.gz"
+          fi
+
+          tensorrt_path=$(find "$download_dir" -maxdepth 1 -name 'TensorRT-*')
+          if [ ${{ runner.os }} = Windows ]; then
+            tensorrt_path=$(cygpath -wa "$tensorrt_path")
+          else
+            tensorrt_path=$(realpath "$tensorrt_path")
+          fi
+
+          echo "TENSORRT_HOME=$tensorrt_path" >> "$GITHUB_ENV"
+
       - name: Configure to use latest Android NDK
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu') && contains(matrix.build_opts, '--android')
         run: |
@@ -725,6 +801,10 @@ jobs:
               cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_{cuda,shared}.{dll,lib} \
                 ./build/${{ matrix.artifact_name }}/lib/
             fi
+            if [ -f ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_tensorrt.dll ]; then
+              cp ./build/${{ matrix.release_config }}/${{ matrix.release_config }}/"$TARGET_LIBRARY"_providers_tensorrt.{dll,lib} \
+                ./build/${{ matrix.artifact_name }}/lib/
+            fi
           else
             ./tools/ci_build/github/linux/copy_strip_binary.sh \
               -r "$(pwd)/build" \
@@ -787,6 +867,7 @@ jobs:
           for arg in "${build_opts[@]}"; do
             case "$arg" in
               --use_cuda) use_cuda=1 ;;
+              --use_tensorrt) use_tensorrt=1 ;;
               --use_dml) use_dml=1 ;;
               --use_webgpu) use_webgpu=1 ;;
             esac
@@ -798,6 +879,7 @@ jobs:
               "arch": $arch,
               # ONNX Runtimeが示す順番に従う
               "devices": [
+                ("TensorRT" | select($use_tensorrt == "1")),
                 ("CUDA" | select($use_cuda == "1")),
                 ("DirectML" | select($use_dml == "1")),
                 ("WebGPU" | select($use_webgpu == "1")),
@@ -808,6 +890,7 @@ jobs:
             --arg os "$os" \
             --arg arch "$arch" \
             --arg use_cuda "$use_cuda" \
+            --arg use_tensorrt "$use_tensorrt" \
             --arg use_dml "$use_dml" \
             --arg use_webgpu "$use_webgpu" \
             > "$RELEASE_NAME.json"
