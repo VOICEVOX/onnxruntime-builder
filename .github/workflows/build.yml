@@ -896,6 +896,9 @@ jobs:
 
       - name: Build ONNX Runtime
         id: build
+        env:
+          # Rustのwasm32-unknown-emscriptenは常に-fwasm-exceptionsでリンクするため、それに揃える
+          EMCC_CFLAGS: -fwasm-exceptions
         run: |
           cd cmake/external/emsdk
           # onnxruntime 1.23.2 で使用している Emscripten のバージョン
