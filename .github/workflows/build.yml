@@ -898,8 +898,9 @@ jobs:
         id: build
         run: |
           cd cmake/external/emsdk
-          ./emsdk install latest
-          ./emsdk activate latest
+          # onnxruntime 1.23.2 で使用している Emscripten のバージョン
+          ./emsdk install 4.0.8
+          ./emsdk activate 4.0.8
           source ./emsdk_env.sh
           cd "$GITHUB_WORKSPACE"
 
