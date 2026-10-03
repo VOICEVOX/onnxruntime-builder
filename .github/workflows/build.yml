@@ -60,7 +60,7 @@ jobs:
       - name: Generate build matrix
         id: generate-matrix
         run: |
-          cat <<'YAML' > "$RUNNER_TEMP/build-matrix.yml"
+          cat <<'YAML' > matrix.yml
           # TODO: 外せる`--compile_no_warning_as_error`は外す
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x64
             os: windows-2022
@@ -375,9 +375,9 @@ jobs:
             is_webgpu: false
           YAML
           if ! ${{ inputs.build_webgpu || false }}; then
-            yq -i 'del(.[] | select(.is_webgpu != false))' "$RUNNER_TEMP/build-matrix.yml"
+            yq -i 'del(.[] | select(.is_webgpu != false))' matrix.yml
           fi
-          matrix=$(yq -o=json -I=0 '.' "$RUNNER_TEMP/build-matrix.yml")
+          matrix=$(yq -o=json -I=0 matrix.yml)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   # 他のリポジトリとは異なり、既存の同名のtag_nameがあることを許容する。
