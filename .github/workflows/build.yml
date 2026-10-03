@@ -52,7 +52,7 @@ defaults:
 
 jobs:
   config:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     outputs:
       tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
