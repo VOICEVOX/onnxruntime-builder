@@ -374,9 +374,11 @@ jobs:
             release_config: Release-iphonesimulator
             is_webgpu: false
           YAML
+
           if ! ${{ inputs.build_webgpu || false }}; then
             yq -i 'del(.[] | select(.is_webgpu != false))' matrix.yml
           fi
+
           matrix=$(yq -o=json -I=0 matrix.yml)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
