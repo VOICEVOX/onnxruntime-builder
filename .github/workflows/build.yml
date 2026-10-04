@@ -375,7 +375,7 @@ jobs:
             is_webgpu: false
           YAML
 
-          if ! ${{ inputs.build_webgpu || false }}; then
+          if ! ${{ inputs.build_webgpu == true }}; then
             yq -i 'del(.[] | select(.is_webgpu != false))' matrix.yml
           fi
 
