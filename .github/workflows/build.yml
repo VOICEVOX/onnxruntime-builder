@@ -605,20 +605,20 @@ jobs:
             # windowsでwebgputターゲットにクロスコンパイルすると`llvm-tblgen.exe`と`clang-tblgen.exe`のビルドに失敗する。
             # これを回避するために事前にx64ターゲットで`llvm-tblgen.exe`と`clang-tblgen.exe`のみをビルドしてクロスコンパイル時にそれを使うことで対処する。
             # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/tools/ci_build/github/azure-pipelines/stages/nodejs-win-packaging-stage.yml#L92-L106
-            python ./tools/ci_build/build.py \
-              --build_dir ./build \
-              --config Release \
-              --update \
-              --parallel \
-              --build_shared_lib \
-              --compile_no_warning_as_error \
-              --use_webgpu \
-              1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
-              2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
+            (
+              python ./tools/ci_build/build.py \
+                --build_dir ./build \
+                --config Release \
+                --update \
+                --parallel \
+                --build_shared_lib \
+                --compile_no_warning_as_error \
+                --use_webgpu
 
-            cmake --build ./build/Release \
-              --config Release \
-              --target llvm-tblgen clang-tblgen \
+              cmake --build ./build/Release \
+                --config Release \
+                --target llvm-tblgen clang-tblgen
+            ) \
               1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
               2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
 
