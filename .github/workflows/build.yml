@@ -164,33 +164,38 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
+              --arm64
               --cmake_extra_defines
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64-dml
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
+              --arm64
               --use_dml
               --cmake_extra_defines
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64-webgpu
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: AArch64
             build_opts: |-
               --compile_no_warning_as_error
+              --arm64
               --use_webgpu
               --cmake_extra_defines
               onnxruntime_BUILD_UNIT_TESTS=OFF
+              "LLVM_TABLEGEN=$GITHUB_WORKSPACE/Windows_WebGPU_BuildTools/llvm-tblgen.exe"
+              "CLANG_TABLEGEN=$GITHUB_WORKSPACE/Windows_WebGPU_BuildTools/clang-tblgen.exe"
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-x64-webgpu
             os: ubuntu-22.04
@@ -595,6 +600,34 @@ jobs:
           # skip test: https://github.com/microsoft/onnxruntime/issues/2436
           # ONNX Runtime v1.9.0 requires CMAKE_SYSTEM_PROCESSOR, https://github.com/microsoft/onnxruntime/releases/tag/v1.9.0
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
+
+          if ${{ contains(matrix.artifact_name, '-win-arm64') && endsWith(matrix.artifact_name, '-webgpu') }}; then
+            # windowsでwebgpuターゲットにクロスコンパイルすると`llvm-tblgen.exe`と`clang-tblgen.exe`のビルドに失敗する。
+            # これを回避するために事前にx64ターゲットで`llvm-tblgen.exe`と`clang-tblgen.exe`のみをビルドしてクロスコンパイル時にそれを使うことで対処する。
+            # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/tools/ci_build/github/azure-pipelines/stages/nodejs-win-packaging-stage.yml#L92-L106
+            (
+              python ./tools/ci_build/build.py \
+                --build_dir ./build \
+                --config Release \
+                --update \
+                --parallel \
+                --build_shared_lib \
+                --compile_no_warning_as_error \
+                --use_webgpu
+
+              cmake --build ./build/Release \
+                --config Release \
+                --target llvm-tblgen clang-tblgen
+            ) \
+              1>>"${{ env.TARGET_LIBRARY == 'onnxruntime' && '/dev/stdout' || format('{0}_stdout.txt', matrix.artifact_name) }}" \
+              2>>"${{ env.TARGET_LIBRARY == 'onnxruntime' && '/dev/stderr' || format('{0}_stderr.txt', matrix.artifact_name) }}"
+
+            mkdir ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/llvm-tblgen.exe ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/clang-tblgen.exe ./Windows_WebGPU_BuildTools
+
+            rm -rf ./build
+          fi
 
           build_opts=(
           ${{ matrix.build_opts }}
