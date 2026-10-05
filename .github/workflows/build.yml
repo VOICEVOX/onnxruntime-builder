@@ -602,7 +602,7 @@ jobs:
           # Both CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR are required.
 
           if ${{ contains(matrix.artifact_name, '-win-arm64') && endsWith(matrix.artifact_name, '-webgpu') }}; then
-            # windowsでwebgputターゲットにクロスコンパイルすると`llvm-tblgen.exe`と`clang-tblgen.exe`のビルドに失敗する。
+            # windowsでwebgpuターゲットにクロスコンパイルすると`llvm-tblgen.exe`と`clang-tblgen.exe`のビルドに失敗する。
             # これを回避するために事前にx64ターゲットで`llvm-tblgen.exe`と`clang-tblgen.exe`のみをビルドしてクロスコンパイル時にそれを使うことで対処する。
             # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/tools/ci_build/github/azure-pipelines/stages/nodejs-win-packaging-stage.yml#L92-L106
             (
