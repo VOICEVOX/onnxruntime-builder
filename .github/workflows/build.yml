@@ -198,7 +198,7 @@ jobs:
               "CLANG_TABLEGEN=$GITHUB_WORKSPACE/Windows_WebGPU_BuildTools/clang-tblgen.exe"
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: Arm64EC
             build_opts: |-
@@ -208,7 +208,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec-dml
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: Arm64EC
             build_opts: |-
@@ -219,7 +219,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-arm64ec-webgpu
-            os: windows-11-arm
+            os: windows-2022
             spec_os: Windows
             spec_arch: Arm64EC
             build_opts: |-
