@@ -6,16 +6,16 @@
 
 set -eu
 
-if [ ! -v ESIGNERCKA_USERNAME ]; then # eSignerCKAのユーザー名
-    echo "ESIGNERCKA_USERNAMEが未定義です"
+if [ -z "${ESIGNERCKA_USERNAME:-}" ]; then # eSignerCKAのユーザー名
+    echo "ESIGNERCKA_USERNAMEが未定義もしくは空文字列です"
     exit 1
 fi
-if [ ! -v ESIGNERCKA_PASSWORD ]; then # eSignerCKAのパスワード
-    echo "ESIGNERCKA_PASSWORDが未定義です"
+if [ -z "${ESIGNERCKA_PASSWORD:-}" ]; then # eSignerCKAのパスワード
+    echo "ESIGNERCKA_PASSWORDが未定義もしくは空文字列です"
     exit 1
 fi
-if [ ! -v ESIGNERCKA_TOTP_SECRET ]; then # eSignerCKAのTOTP Secret
-    echo "ESIGNERCKA_TOTP_SECRETが未定義です"
+if [ -z "${ESIGNERCKA_TOTP_SECRET:-}" ]; then # eSignerCKAのTOTP Secret
+    echo "ESIGNERCKA_TOTP_SECRETが未定義もしくは空文字列です"
     exit 1
 fi
 
