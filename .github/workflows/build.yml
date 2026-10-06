@@ -653,8 +653,8 @@ jobs:
                 --config Release \
                 --target llvm-tblgen clang-tblgen
             ) \
-              1>>"${{ env.TARGET_LIBRARY == 'onnxruntime' && '/dev/stdout' || format('{0}_stdout.txt', matrix.artifact_name) }}" \
-              2>>"${{ env.TARGET_LIBRARY == 'onnxruntime' && '/dev/stderr' || format('{0}_stderr.txt', matrix.artifact_name) }}"
+              1>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&1' || format('> {0}_stdout.txt', matrix.artifact_name) }} \
+              2>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&2' || format('> {0}_stderr.txt', matrix.artifact_name) }}
 
             mkdir ./Windows_WebGPU_BuildTools
             cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/llvm-tblgen.exe ./Windows_WebGPU_BuildTools
