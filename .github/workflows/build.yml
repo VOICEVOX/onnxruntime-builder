@@ -906,10 +906,15 @@ jobs:
       - name: '"onnxruntime" → "voicevox_onnxruntime"'
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
+          find ./xcframework -type f -exec sed -i '' s/onnxruntime/voicevox_onnxruntime/ {} +
+
           for arch in aarch64 sim; do
             mv xcframework/Frameworks/$arch/{,voicevox_}onnxruntime.framework
+
+            # CFBundleIdentifier cannot contain underscores, unlike executable and module names.
+            plutil -replace CFBundleIdentifier -string 'jp.hiroshiba.voicevox.voicevox-onnxruntime' \
+              "xcframework/Frameworks/$arch/voicevox_onnxruntime.framework/Info.plist"
           done
-          find ./xcframework -type f -exec sed -i '' s/onnxruntime/voicevox_onnxruntime/ {} +
 
       - name: Create aarch64 Framework
         run: |
