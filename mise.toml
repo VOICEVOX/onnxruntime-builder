@@ -1,0 +1,23 @@
+[tools]
+jactionlint = "2.3.0"
+oxfmt = "0.74.0"
+pinact = "5.0.0"
+shellcheck = "0.11.0"
+
+[settings]
+minimum_release_age = "7d"
+
+[tasks.lint]
+depends = ["lint:actionlint", "lint:shellcheck", "lint:pinact"]
+
+[tasks."lint:actionlint"]
+run = "jactionlint --profile correctness"
+
+[tasks."lint:shellcheck"]
+run = "git ls-files -z '*.sh' '*.bash' | xargs -0 shellcheck"
+
+[tasks."lint:pinact"]
+run = "pinact run --check --min-age 7"
+
+[tasks.fmt]
+run = "git ls-files -z | xargs -0 oxfmt --write"

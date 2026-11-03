@@ -1,9 +1,21 @@
 # onnxruntime-builder
+
 VOICEVOX COREで利用するonnxruntimeのビルドを行うリポジトリ
 
 ## ビルド
 
 [`build`ワークフロー]をworkflow_dispatchで起動。
+
+## Lint
+
+[mise](https://mise.jdx.dev/)でツールをインストールし、チェックを実行する。
+
+```sh
+mise install --locked
+mise run lint
+```
+
+`mise run fmt`でフォーマットする。
 
 ## リリース
 
