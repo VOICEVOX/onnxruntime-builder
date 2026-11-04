@@ -14,6 +14,9 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
+      commit_hash:
+        description: "ONNX Runtimeのコミットハッシュ（指定時はバージョンタグの代わりに使用）"
+        required: false
       target:
         description: "ビルド対象"
         type: choice
@@ -31,14 +34,16 @@ on:
         default: false
 
 env:
-  TARGET_LIBRARY:
-    |-
+  TARGET_LIBRARY: |-
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION:
     |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
-    ${{ inputs.version || '1.23.2' }}
-  RELEASE:
-    |- # workflow_dispatchでのreleaseフラグがあればリリースする
+    ${{ inputs.version || '1.31.0' }}
+  ONNXRUNTIME_CHECKOUT_REF: |-
+    ${{ inputs.commit_hash || format('v{0}', inputs.version || '1.31.0') }}
+  VOICEVOX_ONNXRUNTIME_CHECKOUT_REF: |-
+    ${{ inputs.commit_hash || format('refs/tags/v{0}-voicevox', inputs.version || '1.31.0') }}
+  RELEASE: |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
 
 defaults:
@@ -52,7 +57,7 @@ jobs:
       tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
     steps:
       - name: Nop
-        run: ':'
+        run: ":"
 
   # 他のリポジトリとは異なり、既存の同名のtag_nameがあることを許容する。
   # 何故なら本リポジトリではリリースの差し替えを行うため。ゆえにimmutable releaseも使わない。
@@ -147,10 +152,15 @@ jobs:
               --compile_no_warning_as_error
               --use_cuda
               --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
+              --nvcc_threads 1
               --cmake_extra_defines
+              # WindowsではFlash Attentionのコンパイルだけで約4.5時間かかり、ジョブの6時間制限を超える。
+              onnxruntime_USE_FLASH_ATTENTION=OFF
               # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
               # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
               "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
+              onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-win-x86
@@ -201,7 +211,7 @@ jobs:
             os: ubuntu-22.04
             spec_os: Linux
             spec_arch: x86_64
-            gcc_version: "12"
+            gcc_version: "14" # 古いGCCではDawnのコンパイルに失敗する
             build_opts: |-
               --compile_no_warning_as_error
               --use_webgpu
@@ -222,18 +232,21 @@ jobs:
             os: ubuntu-22.04
             spec_os: Linux
             spec_arch: x86_64
-            gcc_version: "12"
-            cuda_version: 12.8.1
+            gcc_version: "13"
+            cuda_version: 12.9.1
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.8.0.87_cuda12-archive.tar.xz
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。ビルド時間の短縮のため。
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
+              --nvcc_threads 1
               --cmake_extra_defines
               # 将来登場するGPUをサポートするにはPTXをバンドルする必要があるが、デフォルトではバンドルされないため明示的に指定する。onnxruntimeのデフォルト値は以下のURLを参照。
               # ref: https://github.com/microsoft/onnxruntime/blob/v1.23.2/cmake/external/cuda_configuration.cmake#L117
               "CMAKE_CUDA_ARCHITECTURES=60-real;70-real;75-real;80-real;86-real;89-real;90a-real;100a-real;120a-real;120-virtual"
+              onnxruntime_CUDA_FATBIN_COMPRESS_SIZE=ON
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-linux-armhf
@@ -265,7 +278,7 @@ jobs:
             os: ubuntu-22.04-arm
             spec_os: Linux
             spec_arch: AArch64
-            gcc_version: "12"
+            gcc_version: "14" # 古いGCCではDawnのコンパイルに失敗する
             symlink_workaround: true
             build_opts: |-
               --compile_no_warning_as_error
@@ -424,7 +437,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_CHECKOUT_REF }}-cache-v2-${{ hashFiles('matrix.json') }}
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
@@ -444,8 +457,22 @@ jobs:
         if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS'
         run: brew install tree
 
+      - name: Use Xcode 16.1 for WebGPU builds
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && runner.os == 'macOS' && contains(matrix.build_opts, '--use_webgpu')
+        run: |
+          xcode_path=/Applications/Xcode_16.1.app
+          if [[ ! -d $xcode_path ]]; then
+            echo "Xcode 16.1 is not installed" >&2
+            exit 1
+          fi
+
+          sudo xcode-select -s "$xcode_path/Contents/Developer"
+          xcodebuild -version
+
       - name: Install and configure build dependencies on Linux
         if: steps.cache-build-result.outputs.cache-hit != 'true' && startsWith(matrix.os, 'ubuntu')
+        env:
+          GCC_VERSION: ${{ matrix.gcc_version }}
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -454,15 +481,51 @@ jobs:
               wget \
               qemu-user-binfmt
 
-          if [ -n "${{ matrix.gcc_version }}" ]; then
+          if [ -n "$GCC_VERSION" ]; then
+            . /etc/os-release
+            if [ "$VERSION_CODENAME" = "jammy" ] && [ "$GCC_VERSION" -ge 13 ]; then
+              sudo apt-get install -y software-properties-common
+              sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+              sudo apt-get update
+            fi
+
             sudo apt-get install -y \
-                gcc-${{ matrix.gcc_version }}"$ARCH_SUFFIX" \
-                g++-${{ matrix.gcc_version }}"$ARCH_SUFFIX"
+                gcc-"$GCC_VERSION""$ARCH_SUFFIX" \
+                g++-"$GCC_VERSION""$ARCH_SUFFIX"
 
             # Set environment variable CC / CXX
-            echo "CC=${ARCH_PREFIX}gcc-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
-            echo "CXX=${ARCH_PREFIX}g++-${{ matrix.gcc_version }}" >> "$GITHUB_ENV"
+            {
+              echo "CC=${ARCH_PREFIX}gcc-$GCC_VERSION"
+              echo "CXX=${ARCH_PREFIX}g++-$GCC_VERSION"
+              echo "CUDAHOSTCXX=${ARCH_PREFIX}g++-$GCC_VERSION"
+            } >> "$GITHUB_ENV"
           fi
+
+      - name: Install newer binutils
+        if: steps.cache-build-result.outputs.cache-hit != 'true' && matrix.os == 'ubuntu-22.04' && (contains(matrix.build_opts, '--use_cuda') || contains(matrix.build_opts, '--use_webgpu'))
+        env:
+          BINUTILS_VERSION: "2.42"
+          BINUTILS_SHA256: f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+        run: |
+          wget -O binutils.tar.xz "https://ftp.gnu.org/gnu/binutils/binutils-$BINUTILS_VERSION.tar.xz"
+          echo "$BINUTILS_SHA256  binutils.tar.xz" | sha256sum --check
+          mkdir binutils-src binutils-build
+          tar -xf binutils.tar.xz --strip-components=1 -C binutils-src
+
+          (
+            cd binutils-build
+            ../binutils-src/configure \
+              --prefix="/opt/binutils-$BINUTILS_VERSION" \
+              --disable-nls \
+              --disable-werror
+            make -j"$(nproc)" all-binutils all-gas
+            sudo make install-binutils install-gas
+          )
+
+          echo "/opt/binutils-$BINUTILS_VERSION/bin" >> "$GITHUB_PATH"
+          echo "COMPILER_PATH=/opt/binutils-$BINUTILS_VERSION/bin" >> "$GITHUB_ENV"
+
+          "/opt/binutils-$BINUTILS_VERSION/bin/as" --version
 
       # ONNX Runtime v1.23.0 requires CMake 3.28 or higher.
       - name: Install CMake
@@ -533,7 +596,7 @@ jobs:
         with:
           repository: microsoft/onnxruntime
           submodules: recursive
-          ref: v${{ env.ONNXRUNTIME_VERSION }}
+          ref: ${{ env.ONNXRUNTIME_CHECKOUT_REF }}
 
       - name: Restore the stashed build directory
         if: steps.cache-build-result.outputs.cache-hit == 'true'
@@ -554,7 +617,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "$VOICEVOX_ONNXRUNTIME_CHECKOUT_REF"
             git switch -d FETCH_HEAD
           ) 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
         env:
@@ -612,6 +675,7 @@ jobs:
                 --update \
                 --parallel \
                 --build_shared_lib \
+                --no_telemetry \
                 --compile_no_warning_as_error \
                 --use_webgpu
 
@@ -623,8 +687,8 @@ jobs:
               2>${{ env.TARGET_LIBRARY == 'onnxruntime' && '&2' || format('> {0}_stderr.txt', matrix.artifact_name) }}
 
             mkdir ./Windows_WebGPU_BuildTools
-            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/llvm-tblgen.exe ./Windows_WebGPU_BuildTools
-            cp ./build/Release/_deps/dawn-build/third_party/dxc/Release/bin/clang-tblgen.exe ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/directx-shader-compiler/src/Release/bin/llvm-tblgen.exe ./Windows_WebGPU_BuildTools
+            cp ./build/Release/_deps/dawn-build/third_party/directx-shader-compiler/src/Release/bin/clang-tblgen.exe ./Windows_WebGPU_BuildTools
 
             rm -rf ./build
           fi
@@ -640,6 +704,7 @@ jobs:
             --build \
             --parallel \
             --build_shared_lib \
+            --no_telemetry \
             "${build_opts[@]}" \
             1${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&1' || format('>> {0}_stdout.txt', matrix.artifact_name) }} \
             2${{ env.TARGET_LIBRARY == 'onnxruntime' && '>&2' || format('>> {0}_stderr.txt', matrix.artifact_name) }}
@@ -990,7 +1055,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "$VOICEVOX_ONNXRUNTIME_CHECKOUT_REF"
             git switch -d FETCH_HEAD
           ) 1>>/dev/null 2>>/dev/null
         env:
@@ -1004,7 +1069,14 @@ jobs:
           path: VOICEVOX_ORT_TERMS.md
 
   build-spec-table:
-    needs: [config, create-draft-release, build-onnxruntime, build-xcframework, get-terms]
+    needs:
+      [
+        config,
+        create-draft-release,
+        build-onnxruntime,
+        build-xcframework,
+        get-terms,
+      ]
     runs-on: ubuntu-22.04
     permissions:
       contents: write
