@@ -151,7 +151,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              # --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
               # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
               --nvcc_threads 1
               --cmake_extra_defines
@@ -239,7 +239,7 @@ jobs:
             build_opts: |-
               --compile_no_warning_as_error
               --use_cuda
-              # --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
+              --disable_contrib_ops # VOICEVOXではContrib Opsは使わないので無効化。Contrib Opsを有効にしてビルドすると6時間（GitHub Actionsの最大実行時間）を超えることがあるため。
               # NVCCの並列数を制限し、メモリ使用量を抑える。（メモリ使用量が多すぎるとGitHub ActionsのRunnerが落ちる）
               --nvcc_threads 1
               --cmake_extra_defines
