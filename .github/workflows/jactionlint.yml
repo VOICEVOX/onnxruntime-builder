@@ -1,11 +1,11 @@
-name: actionlint
+name: jactionlint
 
 on:
   - push
   - pull_request
 
 jobs:
-  actionlint:
+  jactionlint:
     runs-on: ubuntu-22.04
 
     steps:
@@ -15,5 +15,5 @@ jobs:
       - name: Setup mise
         uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
 
-      - name: actionlint
-        run: mise run lint:actionlint
+      - name: jactionlint
+        run: mise run lint:jactionlint
