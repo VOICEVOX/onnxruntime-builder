@@ -1,0 +1,19 @@
+name: oxfmt
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  oxfmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup mise
+        uses: jdx/mise-action@fc42bcc7ddbf51124c30f95a877a0c5168a3bfde # v5.2.1
+
+      - name: oxfmt
+        run: mise run lint:oxfmt
