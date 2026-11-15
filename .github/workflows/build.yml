@@ -271,7 +271,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64
-            os: macos-14
+            os: macos-15
             spec_os: macOS
             spec_arch: AArch64
             build_opts: |-
@@ -293,7 +293,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-osx-arm64-webgpu
-            os: macos-14
+            os: macos-15
             spec_os: macOS
             spec_arch: AArch64
             build_opts: |-
@@ -339,7 +339,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-arm64
-            os: macos-14
+            os: macos-15
             spec_os: iOS
             spec_arch: AArch64
             build_opts: |-
@@ -354,7 +354,7 @@ jobs:
               onnxruntime_BUILD_UNIT_TESTS=OFF
             release_config: Release-iphoneos
           - artifact_name: ${{ inputs.target || 'onnxruntime' }}-ios-sim-arm64
-            os: macos-14
+            os: macos-15
             spec_os: iOS
             spec_arch: AArch64
             build_opts: |-
@@ -863,7 +863,7 @@ jobs:
 
   build-xcframework:
     needs: [create-draft-release, build-onnxruntime]
-    runs-on: macos-14
+    runs-on: macos-15
     permissions:
       contents: write
     outputs:
@@ -903,10 +903,15 @@ jobs:
       - name: '"onnxruntime" → "voicevox_onnxruntime"'
         if: env.TARGET_LIBRARY == 'voicevox_onnxruntime'
         run: |
+          find ./xcframework -type f -exec sed -i '' s/onnxruntime/voicevox_onnxruntime/ {} +
+
           for arch in aarch64 sim; do
             mv xcframework/Frameworks/$arch/{,voicevox_}onnxruntime.framework
+
+            # CFBundleIdentifier cannot contain underscores, unlike executable and module names.
+            plutil -replace CFBundleIdentifier -string 'jp.hiroshiba.voicevox.voicevox-onnxruntime' \
+              "xcframework/Frameworks/$arch/voicevox_onnxruntime.framework/Info.plist"
           done
-          find ./xcframework -type f -exec sed -i '' s/onnxruntime/voicevox_onnxruntime/ {} +
 
       - name: Create aarch64 Framework
         run: |
