@@ -31,14 +31,11 @@ on:
         default: false
 
 env:
-  TARGET_LIBRARY:
-    |-
+  TARGET_LIBRARY: |-
     ${{ inputs.target || 'onnxruntime' }}
-  ONNXRUNTIME_VERSION:
-    |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
+  ONNXRUNTIME_VERSION: |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
     ${{ inputs.version || '1.23.2' }}
-  RELEASE:
-    |- # workflow_dispatchでのreleaseフラグがあればリリースする
+  RELEASE: |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
 
 defaults:
@@ -52,7 +49,7 @@ jobs:
       tag: ${{ env.TARGET_LIBRARY }}-${{ env.ONNXRUNTIME_VERSION }}
     steps:
       - name: Nop
-        run: ':'
+        run: ":"
 
   # 他のリポジトリとは異なり、既存の同名のtag_nameがあることを許容する。
   # 何故なら本リポジトリではリリースの差し替えを行うため。ゆえにimmutable releaseも使わない。
