@@ -15,7 +15,7 @@ on:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
       commit_hash:
-        description: "ONNX Runtimeのコミットハッシュ（指定時はバージョンタグの代わりに使用）"
+        description: "ONNX Runtimeのコミットハッシュ。デフォルトはversionタグ"
         required: false
       target:
         description: "ビルド対象"
