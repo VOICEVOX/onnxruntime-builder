@@ -17,6 +17,9 @@ on:
       version:
         description: "バージョン情報（A.BB.C / A.BB.C-preview.D）"
         required: true
+      commit_hash:
+        description: "ONNX Runtimeのコミットハッシュ。デフォルトはversionタグ"
+        required: false
       target:
         description: "ビルド対象"
         type: choice
@@ -38,6 +41,10 @@ env:
     ${{ inputs.target || 'onnxruntime' }}
   ONNXRUNTIME_VERSION: |- # workflow_dispatchでのバージョン名が入る。無指定なら適当なバージョン
     ${{ inputs.version || '1.23.2' }}
+  ONNXRUNTIME_CHECKOUT_REF: |-
+    ${{ inputs.commit_hash || format('v{0}', inputs.version || '1.23.2') }}
+  VOICEVOX_ONNXRUNTIME_CHECKOUT_REF: |-
+    ${{ inputs.commit_hash || format('refs/tags/v{0}-voicevox', inputs.version || '1.23.2') }}
   RELEASE: |- # workflow_dispatchでのreleaseフラグがあればリリースする
     ${{ inputs.release }}
 
@@ -424,7 +431,7 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: build/
-          key: ${{ matrix.artifact_name }}-v${{ env.ONNXRUNTIME_VERSION }}-cache-${{ hashFiles('matrix.json') }}
+          key: ${{ matrix.artifact_name }}-${{ env.ONNXRUNTIME_CHECKOUT_REF }}-cache-${{ hashFiles('matrix.json') }}
 
       - name: Free Disk Space
         uses: jlumbroso/free-disk-space@ceedf095f4ec1a097402bc6bd80831f2e1a6fde6 # v2.0.0
@@ -533,7 +540,7 @@ jobs:
         with:
           repository: microsoft/onnxruntime
           submodules: recursive
-          ref: v${{ env.ONNXRUNTIME_VERSION }}
+          ref: ${{ env.ONNXRUNTIME_CHECKOUT_REF }}
 
       - name: Restore the stashed build directory
         if: steps.cache-build-result.outputs.cache-hit == 'true'
@@ -554,7 +561,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "$VOICEVOX_ONNXRUNTIME_CHECKOUT_REF"
             git switch -d FETCH_HEAD
           ) 1>>${{ matrix.artifact_name }}_stdout.txt 2>>${{ matrix.artifact_name }}_stderr.txt
         env:
@@ -990,7 +997,7 @@ jobs:
         run: |
           (
             git remote add private "$PRODUCTION_REPOSITORY_URL"
-            git fetch private "refs/tags/v$ONNXRUNTIME_VERSION-voicevox"
+            git fetch private "$VOICEVOX_ONNXRUNTIME_CHECKOUT_REF"
             git switch -d FETCH_HEAD
           ) 1>>/dev/null 2>>/dev/null
         env:
