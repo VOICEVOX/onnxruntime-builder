@@ -9,6 +9,9 @@ name: Build C++ Shared Library
 
 on:
   push:
+    branches:
+      - main
+  pull_request:
   workflow_dispatch:
     inputs:
       version:
