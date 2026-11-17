@@ -1,1 +1,2 @@
+*.patch text eol=lf
 .mise/locks/** linguist-generated=true
