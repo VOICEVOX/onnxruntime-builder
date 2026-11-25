@@ -287,7 +287,7 @@ jobs:
             gcc_version: "12"
             symlink_workaround: true
             # NOTE: Jetson OrinとSBSA向けが統合されたCUDA 13.2を使用する。
-            cuda_version: 13.2
+            cuda_version: 13.2.0
             cuda_sub_packages: "[]" # デフォルト
             cudnn_url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-sbsa/cudnn-linux-sbsa-9.20.0.48_cuda13-archive.tar.xz
             build_opts: |-
